@@ -1,10 +1,10 @@
 import Head from 'next/head'
-import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState, useRef, useCallback } from 'react'
 
 // ═══════════════════════════════════════════════════════════════
-//  MARK JP — Portfolio v4.0  |  THE GAME JOURNEY
-//  Round 1: Boot → Press Start → Cinematic Reveal → Custom Cursor
+//  MARK JP — Portfolio v4.1
+//  Power-on glow boot · Retro arrow cursor · Sound engine
 // ═══════════════════════════════════════════════════════════════
 
 const C = {
@@ -24,10 +24,10 @@ const YEARS_EXP = new Date().getFullYear() - 2014
 
 // ── Data ────────────────────────────────────────────────────────
 const SKILL_TIERS = [
-  { tier: 'MASTER',     color: C.green,  icon: '⬡', skills: ['System Analysis', 'Clinical SaaS Ops', 'API Integration', 'Federated Auth / SSO'] },
-  { tier: 'EXPERT',     color: C.cyan,   icon: '⬢', skills: ['SQL / Databases', 'REST & SOAP APIs', 'UAT & QA', 'Technical Support'] },
-  { tier: 'JOURNEYMAN', color: C.gold,   icon: '◈', skills: ['Python', 'Linux CLI', 'Docker', 'Git'] },
-  { tier: 'APPRENTICE', color: '#aaaaaa',icon: '◇', skills: ['Go', 'Kubernetes', 'Next.js', 'Backend Dev'] },
+  { tier: 'MASTER',     color: C.green,   icon: '⬡', skills: ['System Analysis', 'Clinical SaaS Ops', 'API Integration', 'Federated Auth / SSO'] },
+  { tier: 'EXPERT',     color: C.cyan,    icon: '⬢', skills: ['SQL / Databases', 'REST & SOAP APIs', 'UAT & QA', 'Technical Support'] },
+  { tier: 'JOURNEYMAN', color: C.gold,    icon: '◈', skills: ['Python', 'Linux CLI', 'Docker', 'Git'] },
+  { tier: 'APPRENTICE', color: '#aaaaaa', icon: '◇', skills: ['Go', 'Kubernetes', 'Next.js', 'Backend Dev'] },
 ]
 
 const TECH = [
@@ -39,9 +39,9 @@ const TECH = [
   { name: 'Linux',      color: '#FCC624', bg: '#FCC62422', symbol: '🐧' },
   { name: 'Git',        color: '#F05032', bg: '#F0503222', symbol: '📦' },
   { name: 'Next.js',    color: '#e6eef6', bg: '#ffffff11', symbol: '▲' },
-  { name: 'Veeva',      color: C.green,  bg: '#00E5A522', symbol: '💊' },
-  { name: 'Medidata',   color: C.cyan,   bg: '#00C8FF22', symbol: '🧬' },
-  { name: 'SAML/SSO',   color: C.gold,   bg: '#FFD97D22', symbol: '🔐' },
+  { name: 'Veeva',      color: C.green,   bg: '#00E5A522', symbol: '💊' },
+  { name: 'Medidata',   color: C.cyan,    bg: '#00C8FF22', symbol: '🧬' },
+  { name: 'SAML/SSO',   color: C.gold,    bg: '#FFD97D22', symbol: '🔐' },
   { name: 'REST APIs',  color: '#61DAFB', bg: '#61DAFB22', symbol: '🔌' },
 ]
 
@@ -56,7 +56,7 @@ const QUESTS = [
   {
     id: 'Q002', title: 'markjp.dev — Portfolio Rebuild',
     status: 'IN PROGRESS', statusColor: C.gold,
-    desc: 'Total redesign of personal portfolio — RPG gaming aesthetic with boot animation, custom cursor, cinematic reveals, skill tiers, quest log, and gamified layout. Built with Next.js and Framer Motion.',
+    desc: 'Total redesign of personal portfolio — RPG gaming aesthetic with power-on boot, custom cursor, cinematic reveals, skill tiers, quest log, and gamified layout. Built with Next.js and Framer Motion.',
     tech: ['Next.js', 'Framer Motion', 'CSS', 'Netlify'],
     xp: '+600 XP', reward: 'Unique Portfolio', locked: false,
   },
@@ -78,6 +78,110 @@ const ACHIEVEMENTS = [
   { icon: '⚔️', label: 'Career Changer',  desc: 'Actively leveling up from support to backend engineering' },
 ]
 
+// ════════════════════════════════════════════════════════════════
+//  SOUND ENGINE — Web Audio API, no external files needed
+//  Think of this like a tiny synthesizer built into the browser
+// ════════════════════════════════════════════════════════════════
+const SoundEngine = {
+  ctx: null,
+  enabled: true,
+
+  // Initialize the audio context (must be triggered by user gesture)
+  init() {
+    if (this.ctx) return
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)()
+    } catch (e) { this.enabled = false }
+  },
+
+  // Core: play a tone with given frequency, type, duration, volume
+  _tone(freq, type = 'sine', dur = 0.1, vol = 0.3, delay = 0) {
+    if (!this.enabled || !this.ctx) return
+    try {
+      const osc   = this.ctx.createOscillator()
+      const gain  = this.ctx.createGain()
+      osc.connect(gain)
+      gain.connect(this.ctx.destination)
+      osc.type      = type
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay)
+      gain.gain.setValueAtTime(vol, this.ctx.currentTime + delay)
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + dur)
+      osc.start(this.ctx.currentTime + delay)
+      osc.stop(this.ctx.currentTime + delay + dur + 0.05)
+    } catch (e) {}
+  },
+
+  // Power-on: deep hum that rises — like a console warming up
+  powerOn() {
+    if (!this.enabled || !this.ctx) return
+    try {
+      const osc  = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+      osc.connect(gain); gain.connect(this.ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(60,  this.ctx.currentTime)
+      osc.frequency.linearRampToValueAtTime(180, this.ctx.currentTime + 1.2)
+      gain.gain.setValueAtTime(0, this.ctx.currentTime)
+      gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 0.3)
+      gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.4)
+      osc.start(this.ctx.currentTime)
+      osc.stop(this.ctx.currentTime + 1.5)
+    } catch (e) {}
+  },
+
+  // Boot tick — typewriter key sound
+  bootTick() { this._tone(800, 'square', 0.04, 0.06) },
+
+  // Press Start pulse — ascending 8-bit arpeggio
+  pressStartPulse() {
+    [523, 659, 784, 1047].forEach((f, i) => this._tone(f, 'square', 0.12, 0.12, i * 0.08))
+  },
+
+  // World reveal — cinematic whoosh + chime
+  worldReveal() {
+    this._tone(220, 'sawtooth', 0.6, 0.15)
+    this._tone(880, 'sine', 0.4, 0.2, 0.3)
+    this._tone(1320, 'sine', 0.3, 0.15, 0.5)
+  },
+
+  // Hover — soft sci-fi beep
+  hover() { this._tone(1200, 'sine', 0.06, 0.04) },
+
+  // Click — satisfying retro punch
+  click() {
+    this._tone(400, 'square', 0.05, 0.15)
+    this._tone(200, 'square', 0.08, 0.1, 0.03)
+  },
+
+  // Modal open — ascending sci-fi sweep
+  modalOpen() {
+    this._tone(440, 'sine', 0.15, 0.1)
+    this._tone(660, 'sine', 0.15, 0.12, 0.1)
+    this._tone(880, 'sine', 0.2,  0.1,  0.2)
+  },
+
+  // Modal close — descending
+  modalClose() {
+    this._tone(880, 'sine', 0.1, 0.1)
+    this._tone(440, 'sine', 0.15, 0.1, 0.1)
+    this._tone(220, 'sine', 0.2,  0.08, 0.2)
+  },
+
+  // Zone enter — soft chime
+  zoneEnter() { this._tone(1047, 'sine', 0.25, 0.07) },
+
+  // Quest expand — paper/scroll sound (noise burst)
+  questExpand() {
+    this._tone(300, 'sawtooth', 0.08, 0.08)
+    this._tone(600, 'sine',     0.12, 0.06, 0.05)
+  },
+
+  // Game saved
+  gameSaved() {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => this._tone(f, 'sine', 0.2, 0.15, i * 0.1))
+  },
+}
+
 // ── Typewriter ──────────────────────────────────────────────────
 function useTypewriter(words, speed = 85, pause = 1800) {
   const [display, setDisplay] = useState('')
@@ -88,7 +192,7 @@ function useTypewriter(words, speed = 85, pause = 1800) {
     const word = words[wi % words.length]
     let t
     if (!del && ci <= word.length) { setDisplay(word.slice(0, ci)); t = setTimeout(() => setCi(c => c + 1), speed) }
-    else if (!del && ci > word.length) { t = setTimeout(() => setDel(true), pause) }
+    else if (!del) { t = setTimeout(() => setDel(true), pause) }
     else if (del && ci >= 0) { setDisplay(word.slice(0, ci)); t = setTimeout(() => setCi(c => c - 1), speed / 2) }
     else { setDel(false); setWi(i => (i + 1) % words.length) }
     return () => clearTimeout(t)
@@ -100,18 +204,15 @@ function useTypewriter(words, speed = 85, pause = 1800) {
 function StarField() {
   const ref = useRef(null)
   useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    let animId
+    const canvas = ref.current; if (!canvas) return
+    const ctx = canvas.getContext('2d'); let animId
     const stars = Array.from({ length: 220 }, () => ({
       x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
       r: Math.random() * 1.4 + 0.2, a: Math.random(),
       s: Math.random() * 0.005 + 0.001, d: (Math.random() - 0.5) * 0.1,
     }))
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
-    resize()
-    window.addEventListener('resize', resize)
+    resize(); window.addEventListener('resize', resize)
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       stars.forEach(s => {
@@ -131,28 +232,28 @@ function StarField() {
   return <canvas ref={ref} aria-hidden style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />
 }
 
-// ── Custom Cursor ───────────────────────────────────────────────
-function CustomCursor() {
-  const [pos, setPos] = useState({ x: -100, y: -100 })
+// ════════════════════════════════════════════════════════════════
+//  RETRO ARROW CURSOR WITH NEON TRAIL
+//  Arrow shape built from CSS clip-path — no images needed
+// ════════════════════════════════════════════════════════════════
+function RetroCursor() {
+  const [pos, setPos]       = useState({ x: -200, y: -200 })
+  const [trail, setTrail]   = useState([])
   const [clicking, setClicking] = useState(false)
   const [hovering, setHovering] = useState(false)
-  const [trail, setTrail] = useState([])
   const trailRef = useRef([])
 
   useEffect(() => {
     const move = (e) => {
-      const p = { x: e.clientX, y: e.clientY }
+      const p = { x: e.clientX, y: e.clientY, t: Date.now() }
       setPos(p)
-      trailRef.current = [p, ...trailRef.current.slice(0, 6)]
+      trailRef.current = [p, ...trailRef.current.slice(0, 9)]
       setTrail([...trailRef.current])
-
       const el = document.elementFromPoint(e.clientX, e.clientY)
-      const isClickable = el?.closest('button, a, [role="button"], input, textarea, .clickable')
-      setHovering(!!isClickable)
+      setHovering(!!el?.closest('button, a, [role="button"], .clickable'))
     }
-    const down = () => setClicking(true)
+    const down = () => { setClicking(true);  SoundEngine.click() }
     const up   = () => setClicking(false)
-
     window.addEventListener('mousemove', move)
     window.addEventListener('mousedown', down)
     window.addEventListener('mouseup',   up)
@@ -163,188 +264,183 @@ function CustomCursor() {
     }
   }, [])
 
-  const size = clicking ? 6 : hovering ? 20 : 12
   const color = hovering ? C.gold : C.green
+  const scale = clicking ? 0.8 : hovering ? 1.2 : 1
 
   return (
     <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 9999, pointerEvents: 'none' }}>
-      {/* Trail dots */}
-      {trail.map((p, i) => (
-        <div key={i} style={{
-          position: 'fixed',
-          left: p.x, top: p.y,
-          width: Math.max(2, 6 - i),
-          height: Math.max(2, 6 - i),
-          borderRadius: '50%',
-          background: C.green,
-          opacity: (1 - i / trail.length) * 0.4,
-          transform: 'translate(-50%, -50%)',
-          transition: 'none',
-          pointerEvents: 'none',
-        }} />
-      ))}
+      {/* Neon glow trail */}
+      {trail.slice(1).map((p, i) => {
+        const age  = i / trail.length
+        const size = Math.max(2, 7 - i * 0.7)
+        return (
+          <div key={i} style={{
+            position: 'fixed',
+            left: p.x + 4, top: p.y + 4,
+            width: size, height: size,
+            borderRadius: '50%',
+            background: color,
+            opacity: (1 - age) * 0.35,
+            transform: 'translate(-50%, -50%)',
+            filter: `blur(${i * 0.4}px)`,
+            pointerEvents: 'none',
+            boxShadow: `0 0 ${4 - i * 0.3}px ${color}`,
+          }} />
+        )
+      })}
 
-      {/* Crosshair outer ring */}
+      {/* Arrow cursor — pixel-art retro style */}
       <div style={{
         position: 'fixed',
-        left: pos.x, top: pos.y,
-        width: clicking ? 16 : hovering ? 36 : 24,
-        height: clicking ? 16 : hovering ? 36 : 24,
-        border: `1.5px solid ${color}`,
-        borderRadius: hovering ? '50%' : '2px',
-        transform: `translate(-50%, -50%) rotate(${hovering ? '45deg' : '0deg'})`,
-        transition: 'width 0.12s, height 0.12s, border-radius 0.12s, border-color 0.12s, transform 0.12s',
-        boxShadow: `0 0 ${hovering ? 10 : 6}px ${color}66`,
-        opacity: clicking ? 0.6 : 1,
-      }} />
-
-      {/* Crosshair lines */}
-      {!hovering && (
-        <>
-          <div style={{ position: 'fixed', left: pos.x - 14, top: pos.y, width: 8, height: 1, background: color, transform: 'translateY(-50%)', opacity: 0.8 }} />
-          <div style={{ position: 'fixed', left: pos.x + 6,  top: pos.y, width: 8, height: 1, background: color, transform: 'translateY(-50%)', opacity: 0.8 }} />
-          <div style={{ position: 'fixed', left: pos.x, top: pos.y - 14, width: 1, height: 8, background: color, transform: 'translateX(-50%)', opacity: 0.8 }} />
-          <div style={{ position: 'fixed', left: pos.x, top: pos.y + 6,  width: 1, height: 8, background: color, transform: 'translateX(-50%)', opacity: 0.8 }} />
-        </>
-      )}
-
-      {/* Center dot */}
-      <div style={{
-        position: 'fixed',
-        left: pos.x, top: pos.y,
-        width: size, height: size,
-        borderRadius: '50%',
-        background: color,
-        transform: 'translate(-50%, -50%)',
-        transition: 'width 0.1s, height 0.1s, background 0.12s',
-        boxShadow: `0 0 8px ${color}`,
-      }} />
+        left: pos.x,
+        top:  pos.y,
+        transform: `scale(${scale})`,
+        transformOrigin: '0 0',
+        transition: 'transform 0.08s',
+        filter: `drop-shadow(0 0 4px ${color}) drop-shadow(0 0 8px ${color}88)`,
+        pointerEvents: 'none',
+      }}>
+        <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+          {/* Pixel arrow shape */}
+          <polygon
+            points="0,0 0,20 5,15 9,23 12,22 8,14 14,14"
+            fill={color}
+            stroke={clicking ? '#fff' : 'none'}
+            strokeWidth="0.5"
+          />
+          {/* Inner highlight for pixel depth */}
+          <polygon
+            points="2,2 2,15 5,12 9,20 10,19 6,11 10,11"
+            fill={hovering ? `${C.gold}55` : `${C.bg}44`}
+          />
+        </svg>
+      </div>
     </div>
   )
 }
 
-// ── Boot Screen (Dramatic) ───────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+//  BOOT SCREEN — Power-on glow (no flicker)
+//  Like a monitor warming up: line appears, expands to full screen
+// ════════════════════════════════════════════════════════════════
 function BootScreen({ onDone }) {
-  const [phase, setPhase] = useState('flicker') // flicker → lines → bar → done
-  const [step, setStep] = useState(0)
-  const [flickerOn, setFlickerOn] = useState(true)
+  const [phase, setPhase] = useState('poweron') // poweron → lines → bar → done
+  const [step,  setStep]  = useState(0)
+  const [lineH, setLineH] = useState(0) // power-on line height %
 
   const bootLines = [
-    { text: 'BIOS v2.14.0 — MARK JP SYSTEMS', color: C.dimmer, delay: 0 },
-    { text: 'CPU: ENGINEER-ANALYST HYBRID @ 3.2GHz', color: C.dimmer, delay: 80 },
-    { text: 'RAM: 10+ YEARS EXPERIENCE LOADED', color: C.dimmer, delay: 160 },
-    { text: '──────────────────────────────────', color: C.border, delay: 240 },
-    { text: 'DETECTING SKILL MODULES...', color: C.dim, delay: 320 },
-    { text: '  [OK] CLINICAL SYSTEMS............. LOADED', color: C.green, delay: 440 },
-    { text: '  [OK] API INTEGRATION.............. LOADED', color: C.green, delay: 560 },
-    { text: '  [OK] SSO/SAML AUTH................ LOADED', color: C.green, delay: 680 },
-    { text: '  [..] BACKEND ENGINEERING.......... LOADING', color: C.gold, delay: 800 },
-    { text: '──────────────────────────────────', color: C.border, delay: 920 },
-    { text: 'QUEST LOG: 2 ACTIVE · 1 LOCKED', color: C.cyan, delay: 1000 },
-    { text: 'INITIALIZING PORTFOLIO INTERFACE...', color: C.green, delay: 1100 },
+    { text: 'BIOS v2.14.0 — MARK JP SYSTEMS',              color: C.dimmer },
+    { text: 'CPU: ENGINEER-ANALYST HYBRID @ 3.2GHz',       color: C.dimmer },
+    { text: 'RAM: 10+ YEARS EXPERIENCE LOADED',            color: C.dimmer },
+    { text: '──────────────────────────────────',          color: C.border  },
+    { text: 'DETECTING SKILL MODULES...',                  color: C.dim     },
+    { text: '  [OK] CLINICAL SYSTEMS............. LOADED', color: C.green   },
+    { text: '  [OK] API INTEGRATION.............. LOADED', color: C.green   },
+    { text: '  [OK] SSO/SAML AUTH................ LOADED', color: C.green   },
+    { text: '  [..] BACKEND ENGINEERING.......... LOADING', color: C.gold   },
+    { text: '──────────────────────────────────',          color: C.border  },
+    { text: 'QUEST LOG: 2 ACTIVE · 1 LOCKED',             color: C.cyan    },
+    { text: 'INITIALIZING PORTFOLIO INTERFACE...',         color: C.green   },
   ]
 
-  // Phase 1: CRT flicker
+  // Phase 1: power-on line expands
   useEffect(() => {
-    if (phase !== 'flicker') return
-    let count = 0
-    const flicker = setInterval(() => {
-      setFlickerOn(f => !f)
-      count++
-      if (count > 7) { clearInterval(flicker); setFlickerOn(true); setPhase('lines') }
-    }, 60)
-    return () => clearInterval(flicker)
+    if (phase !== 'poweron') return
+    SoundEngine.powerOn()
+    let h = 0
+    const expand = setInterval(() => {
+      h += 3
+      setLineH(h)
+      if (h >= 100) { clearInterval(expand); setPhase('lines') }
+    }, 18)
+    return () => clearInterval(expand)
   }, [phase])
 
-  // Phase 2: Boot lines
+  // Phase 2: boot lines
   useEffect(() => {
     if (phase !== 'lines') return
     if (step < bootLines.length) {
-      const t = setTimeout(() => setStep(s => s + 1), step === 0 ? 200 : 120)
-      return () => clearTimeout(t)
-    } else {
-      const t = setTimeout(() => setPhase('bar'), 300)
+      const t = setTimeout(() => { setStep(s => s + 1); SoundEngine.bootTick() }, step === 0 ? 200 : 110)
       return () => clearTimeout(t)
     }
+    const t = setTimeout(() => setPhase('bar'), 300)
+    return () => clearTimeout(t)
   }, [phase, step])
 
-  // Phase 3: done
+  // Phase 3: loading bar → done
   useEffect(() => {
     if (phase !== 'bar') return
-    const t = setTimeout(onDone, 1200)
+    const t = setTimeout(onDone, 1100)
     return () => clearTimeout(t)
   }, [phase])
-
-  const barProgress = phase === 'bar' ? 100 : 0
 
   return (
     <motion.div
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.6, ease: 'easeInOut' }}
+      transition={{ duration: 0.5 }}
       style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: C.bg,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        fontFamily: "'VT323', monospace",
-        opacity: flickerOn ? 1 : 0.15,
+        position: 'fixed', inset: 0, zIndex: 1000, background: C.bg,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        fontFamily: "'VT323', monospace", overflow: 'hidden',
       }}
     >
-      {/* CRT vignette */}
-      <div aria-hidden style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%)',
-      }} />
+      {/* Vignette */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.65) 100%)', pointerEvents: 'none' }} />
 
-      {/* Logo */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        style={{
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: 32, color: C.green,
-          textShadow: `0 0 20px ${C.green}, 0 0 60px ${C.green}55`,
-          marginBottom: 32, letterSpacing: 6,
-        }}
-      >MJP</motion.div>
+      {/* Power-on expanding glow line */}
+      {phase === 'poweron' && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0,
+          top: `${50 - lineH / 2}%`,
+          height: `${lineH}%`,
+          background: `linear-gradient(180deg, transparent, ${C.green}22 20%, ${C.green}11 50%, ${C.green}22 80%, transparent)`,
+          transition: 'none',
+        }}>
+          {/* Bright center line */}
+          <div style={{
+            position: 'absolute', top: '50%', left: 0, right: 0,
+            height: 2, background: C.green,
+            boxShadow: `0 0 8px ${C.green}, 0 0 20px ${C.green}, 0 0 40px ${C.green}66`,
+            transform: 'translateY(-50%)',
+          }} />
+        </div>
+      )}
 
-      {/* Boot lines */}
-      <div style={{ width: 480, maxWidth: '90vw' }}>
-        {bootLines.slice(0, step).map((line, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.15 }}
-            style={{ fontSize: 15, letterSpacing: 0.5, marginBottom: 3, color: line.color, fontFamily: "'VT323', monospace" }}
-          >
-            {line.text}
-            {i === step - 1 && phase === 'lines' && (
-              <span style={{ animation: 'blink 0.6s step-end infinite' }}>█</span>
-            )}
-          </motion.div>
-        ))}
-      </div>
+      {/* Content — fades in after power-on */}
+      {phase !== 'poweron' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-      {/* Loading bar */}
-      {phase === 'bar' && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={{ width: 480, maxWidth: '90vw', marginTop: 20 }}
-        >
-          <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.green, marginBottom: 6, letterSpacing: 1 }}>
-            LOADING PORTFOLIO... <span style={{ animation: 'blink 0.5s step-end infinite' }}>█</span>
+          <div style={{
+            fontFamily: "'Press Start 2P', monospace", fontSize: 28, color: C.green,
+            textShadow: `0 0 20px ${C.green}, 0 0 50px ${C.green}55`,
+            marginBottom: 28, letterSpacing: 6,
+          }}>MJP</div>
+
+          <div style={{ width: 480, maxWidth: '90vw' }}>
+            {bootLines.slice(0, step).map((line, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.12 }}
+                style={{ fontSize: 15, letterSpacing: 0.5, marginBottom: 3, color: line.color }}>
+                {line.text}
+                {i === step - 1 && phase === 'lines' && <span style={{ animation: 'blink 0.6s step-end infinite' }}>█</span>}
+              </motion.div>
+            ))}
           </div>
-          <div style={{ height: 8, background: '#0e1e30', borderRadius: 2, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-            <motion.div
-              initial={{ width: '0%' }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 0.9, ease: 'easeInOut' }}
-              style={{ height: '100%', background: `linear-gradient(90deg, ${C.green}88, ${C.green})`, boxShadow: `0 0 10px ${C.green}`, borderRadius: 2 }}
-            />
-          </div>
+
+          {phase === 'bar' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: 480, maxWidth: '90vw', marginTop: 18 }}>
+              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.green, marginBottom: 6, letterSpacing: 1 }}>
+                LOADING PORTFOLIO...<span style={{ animation: 'blink 0.5s step-end infinite' }}>█</span>
+              </div>
+              <div style={{ height: 8, background: '#0e1e30', borderRadius: 2, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+                <motion.div
+                  initial={{ width: '0%' }} animate={{ width: '100%' }}
+                  transition={{ duration: 0.85, ease: 'easeInOut' }}
+                  style={{ height: '100%', background: `linear-gradient(90deg, ${C.green}88, ${C.green})`, boxShadow: `0 0 10px ${C.green}`, borderRadius: 2 }}
+                />
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       )}
     </motion.div>
@@ -353,31 +449,32 @@ function BootScreen({ onDone }) {
 
 // ── Press Start Screen ───────────────────────────────────────────
 function PressStartScreen({ onStart }) {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t) }, [])
+  useEffect(() => {
+    const pulse = setInterval(() => SoundEngine.pressStartPulse(), 3000)
+    return () => clearInterval(pulse)
+  }, [])
+
+  const handleStart = () => { SoundEngine.worldReveal(); onStart() }
+
+  useEffect(() => {
+    const handler = (e) => { handleStart() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: visible ? 1 : 0 }}
-      exit={{ opacity: 0, scale: 1.05 }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.04 }}
       transition={{ duration: 0.5 }}
-      onClick={onStart}
+      onClick={handleStart}
       style={{
-        position: 'fixed', inset: 0, zIndex: 999,
-        background: C.bg,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
+        position: 'fixed', inset: 0, zIndex: 999, background: C.bg,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         cursor: 'none',
-        fontFamily: "'VT323', monospace",
       }}
     >
       <StarField />
-
-      {/* Vignette */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%)', pointerEvents: 'none', zIndex: 1 }} />
-
-      {/* Grid */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%)', pointerEvents: 'none', zIndex: 1 }} />
       <div aria-hidden style={{
         position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
         backgroundImage: `linear-gradient(${C.green}06 1px, transparent 1px), linear-gradient(90deg, ${C.green}06 1px, transparent 1px)`,
@@ -385,70 +482,27 @@ function PressStartScreen({ onStart }) {
       }} />
 
       <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-        {/* MJP big logo */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: 'clamp(32px, 8vw, 64px)',
-            color: C.green,
-            textShadow: `0 0 30px ${C.green}, 0 0 80px ${C.green}44`,
-            marginBottom: 8, letterSpacing: 8,
-          }}
-        >MJP</motion.div>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7 }}
+          style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 'clamp(36px, 8vw, 68px)', color: C.green, textShadow: `0 0 30px ${C.green}, 0 0 80px ${C.green}44`, marginBottom: 10, letterSpacing: 8 }}>
+          MJP
+        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 'clamp(8px, 1.5vw, 12px)', color: C.dim, letterSpacing: 3, marginBottom: 48 }}
-        >PORTFOLIO · v4.0</motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+          style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 'clamp(8px, 1.5vw, 11px)', color: C.dim, letterSpacing: 3, marginBottom: 52 }}>
+          PORTFOLIO · v4.0
+        </motion.div>
 
-        {/* Decorative line */}
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          style={{ width: 300, height: 1, background: `linear-gradient(90deg, transparent, ${C.green}, transparent)`, margin: '0 auto 48px' }}
-        />
+        <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.6, duration: 0.7 }}
+          style={{ width: 320, height: 1, background: `linear-gradient(90deg, transparent, ${C.green}, transparent)`, margin: '0 auto 52px' }} />
 
-        {/* Press Start */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
-          style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: 'clamp(10px, 2vw, 14px)',
-            color: C.gold,
-            letterSpacing: 3,
-            animation: 'pressStartBlink 1.2s ease-in-out infinite',
-          }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
+          style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 'clamp(10px, 2vw, 14px)', color: C.gold, letterSpacing: 3, animation: 'pressStartBlink 1.2s ease-in-out infinite' }}>
           — PRESS START —
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dimmer, marginTop: 16, letterSpacing: 2 }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
+          style={{ fontFamily: 'VT323, monospace', fontSize: 17, color: C.dimmer, marginTop: 16, letterSpacing: 2 }}>
           CLICK OR PRESS ANY KEY TO CONTINUE
-        </motion.div>
-
-        {/* Bottom decorative text */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          style={{ position: 'absolute', bottom: -120, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}
-        >
-          <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmer, letterSpacing: 1 }}>
-            © {new Date().getFullYear()} MARK JP · ALL RIGHTS RESERVED
-          </div>
         </motion.div>
       </div>
     </motion.div>
@@ -460,24 +514,29 @@ function Brackets({ color = C.green, size = 10 }) {
   const b = { position: 'absolute', width: size, height: size, borderColor: `${color}55` }
   return (
     <>
-      <div style={{ ...b, top: 6, left: 6,   borderTop: '2px solid', borderLeft: '2px solid'  }} />
-      <div style={{ ...b, top: 6, right: 6,  borderTop: '2px solid', borderRight: '2px solid' }} />
-      <div style={{ ...b, bottom: 6, left: 6,  borderBottom: '2px solid', borderLeft: '2px solid'  }} />
+      <div style={{ ...b, top: 6, left: 6,   borderTop: '2px solid', borderLeft:   '2px solid' }} />
+      <div style={{ ...b, top: 6, right: 6,  borderTop: '2px solid', borderRight:  '2px solid' }} />
+      <div style={{ ...b, bottom: 6, left: 6,  borderBottom: '2px solid', borderLeft:  '2px solid' }} />
       <div style={{ ...b, bottom: 6, right: 6, borderBottom: '2px solid', borderRight: '2px solid' }} />
     </>
   )
 }
 
-// ── Section Header ──────────────────────────────────────────────
+// ── Section Header ───────────────────────────────────────────────
 function SectionHeader({ title, color = C.green, sub }) {
+  const ref = useRef(null)
+  const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting && !seen) { setSeen(true); SoundEngine.zoneEnter() } }, { threshold: 0.5 })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [seen])
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5 }}
-      style={{ marginBottom: 28 }}
-    >
+    <motion.div ref={ref}
+      initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5 }}
+      style={{ marginBottom: 28 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
         <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 11, color, letterSpacing: 1 }}>{title}</span>
         <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${color}55, transparent)` }} />
@@ -487,25 +546,25 @@ function SectionHeader({ title, color = C.green, sub }) {
   )
 }
 
-// ── Quest Card ──────────────────────────────────────────────────
+// ── Quest Card ───────────────────────────────────────────────────
 function QuestCard({ q, i }) {
   const [open, setOpen] = useState(false)
+  const handleClick = () => { if (!q.locked) { setOpen(o => !o); SoundEngine.questExpand() } }
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: -16 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ delay: i * 0.12, duration: 0.5 }}
+      initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: '-40px' }} transition={{ delay: i * 0.12, duration: 0.5 }}
       className="clickable"
-      onClick={() => !q.locked && setOpen(o => !o)}
+      onClick={handleClick}
+      onMouseEnter={() => { if (!q.locked) SoundEngine.hover() }}
       style={{
         background: q.locked ? `${C.card}55` : C.card,
         border: `1px solid ${q.locked ? C.border : q.statusColor + '44'}`,
         borderLeft: `3px solid ${q.statusColor}`,
         borderRadius: 6, padding: '18px 20px',
         cursor: q.locked ? 'default' : 'none',
-        opacity: q.locked ? 0.5 : 1,
-        transition: 'background 0.2s, transform 0.2s',
+        opacity: q.locked ? 0.5 : 1, transition: 'background 0.2s',
       }}
       whileHover={!q.locked ? { scale: 1.005, boxShadow: `0 4px 24px rgba(0,0,0,0.3)` } : {}}
     >
@@ -523,34 +582,19 @@ function QuestCard({ q, i }) {
 
       <AnimatePresence>
         {open && !q.locked && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ fontFamily: 'VT323, monospace', fontSize: 17, color: C.dim, lineHeight: 1.65, marginBottom: 10 }}>
-              {q.desc}
-            </div>
-            {q.reward && (
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.gold, marginBottom: 10 }}>
-                🏆 REWARD: {q.reward}
-              </div>
-            )}
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
+            <div style={{ fontFamily: 'VT323, monospace', fontSize: 17, color: C.dim, lineHeight: 1.65, marginBottom: 10 }}>{q.desc}</div>
+            {q.reward && <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.gold, marginBottom: 10 }}>🏆 REWARD: {q.reward}</div>}
           </motion.div>
         )}
       </AnimatePresence>
 
       {!open && !q.locked && (
         <div style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dim, lineHeight: 1.65 }}>
-          {q.desc.slice(0, 95)}...{' '}
-          <span style={{ color: C.green }}>[ tap to expand ]</span>
+          {q.desc.slice(0, 95)}... <span style={{ color: C.green }}>[ tap to expand ]</span>
         </div>
       )}
-
-      {q.locked && (
-        <div style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dimmer }}>🔒 {q.desc}</div>
-      )}
+      {q.locked && <div style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dimmer }}>🔒 {q.desc}</div>}
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
         {q.tech.map(t => (
@@ -561,28 +605,44 @@ function QuestCard({ q, i }) {
   )
 }
 
-// ── Zone Wrapper (section entrance animation) ───────────────────
+// ── Zone Wrapper ─────────────────────────────────────────────────
 function Zone({ id, children, style }) {
   return (
-    <motion.section
-      id={id}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
+    <motion.section id={id}
+      initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      style={style}
-    >
+      style={style}>
       {children}
     </motion.section>
   )
 }
 
-// ── Main ────────────────────────────────────────────────────────
+// ── Sound Toggle ─────────────────────────────────────────────────
+function SoundToggle() {
+  const [on, setOn] = useState(true)
+  const toggle = () => {
+    const next = !on
+    setOn(next)
+    SoundEngine.enabled = next
+    if (next) { SoundEngine.init(); SoundEngine.click() }
+  }
+  return (
+    <button className="clickable" onClick={toggle}
+      onMouseEnter={() => SoundEngine.hover()}
+      style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, padding: '4px 10px', fontFamily: 'VT323, monospace', fontSize: 14, color: on ? C.green : C.dimmer, letterSpacing: 1, transition: 'all 0.2s' }}
+      title={on ? 'Sound ON — click to mute' : 'Sound OFF — click to enable'}>
+      {on ? '🔊' : '🔇'}
+    </button>
+  )
+}
+
+// ── Main ─────────────────────────────────────────────────────────
 export default function Home() {
-  const [mounted,    setMounted]    = useState(false)
-  const [booted,     setBooted]     = useState(false)
-  const [started,    setStarted]    = useState(false)
-  const [hoveredAch, setHoveredAch] = useState(null)
+  const [mounted,     setMounted]     = useState(false)
+  const [booted,      setBooted]      = useState(false)
+  const [started,     setStarted]     = useState(false)
+  const [hoveredAch,  setHoveredAch]  = useState(null)
   const [showContact, setShowContact] = useState(false)
 
   const typed = useTypewriter([
@@ -595,33 +655,29 @@ export default function Home() {
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Press any key to start
+  // Sound init on first interaction
+  const initSound = useCallback(() => { SoundEngine.init() }, [])
   useEffect(() => {
-    if (!booted || started) return
-    const handler = () => setStarted(true)
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [booted, started])
+    window.addEventListener('click',   initSound, { once: true })
+    window.addEventListener('keydown', initSound, { once: true })
+    return () => {
+      window.removeEventListener('click',   initSound)
+      window.removeEventListener('keydown', initSound)
+    }
+  }, [initSound])
 
   if (!mounted) return null
 
   const LEVEL = YEARS_EXP
-  const XP = 7240
-  const NEXT_XP = 10000
+  const XP = 7240, NEXT_XP = 10000
 
-  // ── Hero reveal variants ──────────────────────────────────────
-  const heroContainer = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } }
-  }
-  const heroItem = {
-    hidden: { opacity: 0, y: 24 },
-    show:   { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
-  }
-  const heroCard = {
-    hidden: { opacity: 0, x: 40, rotateY: -10 },
-    show:   { opacity: 1, x: 0, rotateY: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 } }
-  }
+  const heroContainer = { hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } } }
+  const heroItem = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } } }
+  const heroCard = { hidden: { opacity: 0, x: 40 }, show: { opacity: 1, x: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 } } }
+
+  const handleSoundBtn = (fn) => () => { SoundEngine.hover(); fn() }
+  const handleContactOpen  = () => { SoundEngine.modalOpen();  setShowContact(true)  }
+  const handleContactClose = () => { SoundEngine.modalClose(); setShowContact(false) }
 
   return (
     <>
@@ -642,14 +698,12 @@ export default function Home() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
 
-        @keyframes blink         { 0%,100%{opacity:1}   50%{opacity:0} }
-        @keyframes float         { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-8px)} }
-        @keyframes glowPulse     { 0%,100%{box-shadow:0 0 10px ${C.green}33} 50%{box-shadow:0 0 26px ${C.green}88} }
-        @keyframes gridScroll    { 0%{background-position:0 0} 100%{background-position:40px 40px} }
-        @keyframes scanline      { 0%{transform:translateY(0)} 100%{transform:translateY(4px)} }
-        @keyframes pressStartBlink { 0%,100%{opacity:1; text-shadow:0 0 20px ${C.gold}, 0 0 40px ${C.gold}66} 50%{opacity:0.3; text-shadow:none} }
-        @keyframes zoneEntrance  { from{opacity:0; transform:translateY(20px)} to{opacity:1; transform:translateY(0)} }
-        @keyframes borderGlow    { 0%,100%{border-color:${C.border}} 50%{border-color:${C.green}44} }
+        @keyframes blink          { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes float          { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes glowPulse      { 0%,100%{box-shadow:0 0 10px ${C.green}33} 50%{box-shadow:0 0 26px ${C.green}88} }
+        @keyframes gridScroll     { 0%{background-position:0 0} 100%{background-position:40px 40px} }
+        @keyframes scanline       { 0%{transform:translateY(0)} 100%{transform:translateY(4px)} }
+        @keyframes pressStartBlink{ 0%,100%{opacity:1;text-shadow:0 0 20px ${C.gold},0 0 40px ${C.gold}66} 50%{opacity:0.25;text-shadow:none} }
 
         .cta {
           background: ${C.green}; color: #021014;
@@ -664,8 +718,7 @@ export default function Home() {
         .ghost {
           background: transparent; border: 1px solid ${C.border};
           color: ${C.dim}; font-family: 'VT323', monospace; font-size: 18px;
-          padding: 11px 22px; border-radius: 4px;
-          letter-spacing: 1px; transition: all 0.2s;
+          padding: 11px 22px; border-radius: 4px; letter-spacing: 1px; transition: all 0.2s;
         }
         .ghost:hover { border-color: ${C.cyan}66; color: ${C.cyan}; background: ${C.cyan}0d; box-shadow: 0 0 12px ${C.cyan}22; }
 
@@ -679,45 +732,17 @@ export default function Home() {
         .tier-card { transition: transform 0.2s, box-shadow 0.2s; }
         .tier-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
 
-        .tech-item { transition: transform 0.18s, box-shadow 0.18s; }
+        .tech-item { transition: transform 0.18s; }
         .tech-item:hover { transform: scale(1.08) translateY(-2px); }
 
         .ach-badge { transition: border-color 0.2s, transform 0.2s; }
-        .ach-badge:hover { border-color: ${C.gold} !important; transform: scale(1.1); }
+        .ach-badge:hover { border-color: ${C.gold} !important; transform: scale(1.12); }
 
-        .contact-link {
-          display: flex; align-items: center; gap: 14px;
-          background: ${C.card}; border: 1px solid ${C.border};
-          border-radius: 6px; padding: 16px 20px; transition: all 0.2s;
-        }
+        .contact-link { display: flex; align-items: center; gap: 14px; background: ${C.card}; border: 1px solid ${C.border}; border-radius: 6px; padding: 16px 20px; transition: all 0.2s; }
         .contact-link:hover { transform: translateX(4px); }
 
-        /* Zone dividers */
-        .zone-divider {
-          height: 1px;
-          background: linear-gradient(90deg, transparent, ${C.border}, transparent);
-          margin: 0 0 64px;
-          position: relative;
-        }
-        .zone-divider::after {
-          content: '◆';
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          color: ${C.border};
-          font-size: 10px;
-          background: ${C.bg};
-          padding: 0 8px;
-        }
-
-        /* Modal overlay */
-        .modal-overlay {
-          position: fixed; inset: 0; zIndex: 500;
-          background: rgba(0,0,0,0.7);
-          backdrop-filter: blur(4px);
-          display: flex; align-items: center; justify-content: center;
-        }
+        .zone-divider { height: 1px; background: linear-gradient(90deg, transparent, ${C.border}, transparent); margin: 0 0 64px; position: relative; }
+        .zone-divider::after { content: '◆'; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); color: ${C.border}; font-size: 10px; background: ${C.bg}; padding: 0 8px; }
 
         @media (max-width: 768px) {
           .hero-grid    { grid-template-columns: 1fr !important; }
@@ -730,10 +755,10 @@ export default function Home() {
       `}} />
 
       {/* Scanlines */}
-      <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 998, pointerEvents: 'none', backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px)', animation: 'scanline 0.08s linear infinite' }} />
+      <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 998, pointerEvents: 'none', backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.018) 2px, rgba(0,0,0,0.018) 4px)', animation: 'scanline 0.08s linear infinite' }} />
 
-      {/* Custom Cursor */}
-      <CustomCursor />
+      {/* Custom cursor */}
+      <RetroCursor />
 
       {/* Stars */}
       <StarField />
@@ -741,30 +766,21 @@ export default function Home() {
       {/* Grid */}
       <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none', backgroundImage: `linear-gradient(${C.green}07 1px, transparent 1px), linear-gradient(90deg, ${C.green}07 1px, transparent 1px)`, backgroundSize: '40px 40px', animation: 'gridScroll 10s linear infinite' }} />
 
-      {/* ── GAME FLOW ────────────────────────────────────────── */}
+      {/* ── GAME FLOW ─────────────────────────────────────────── */}
       <AnimatePresence mode="wait">
-        {!booted && <BootScreen key="boot" onDone={() => setBooted(true)} />}
+        {!booted  && <BootScreen      key="boot"       onDone={() => setBooted(true)}  />}
         {booted && !started && <PressStartScreen key="pressstart" onStart={() => setStarted(true)} />}
       </AnimatePresence>
 
-      {/* ── MAIN WORLD ───────────────────────────────────────── */}
+      {/* ── MAIN WORLD ────────────────────────────────────────── */}
       <AnimatePresence>
         {started && (
-          <motion.div
-            key="world"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            style={{ minHeight: '100vh', fontFamily: "'VT323', monospace", position: 'relative', zIndex: 10, overflowX: 'hidden' }}
-          >
+          <motion.div key="world" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}
+            style={{ minHeight: '100vh', fontFamily: "'VT323', monospace", position: 'relative', zIndex: 10, overflowX: 'hidden' }}>
 
-            {/* ── HEADER ──────────────────────────────────── */}
-            <motion.header
-              initial={{ y: -60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              style={{ position: 'sticky', top: 0, zIndex: 100, background: `${C.bg}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.border}` }}
-            >
+            {/* HEADER */}
+            <motion.header initial={{ y: -60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              style={{ position: 'sticky', top: 0, zIndex: 100, background: `${C.bg}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.border}` }}>
               <div style={{ maxWidth: 1200, margin: '0 auto', padding: '12px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 36, height: 36, background: `linear-gradient(135deg, ${C.green}, ${C.cyan})`, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace", fontSize: 8, color: '#021014', boxShadow: `0 0 14px ${C.green}44` }}>MJP</div>
@@ -773,8 +789,7 @@ export default function Home() {
                     <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.gold, letterSpacing: 1 }}>LVL {LEVEL} · ENGINEER</div>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div className="header-xp" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.gold }}>XP</span>
                     <div style={{ width: 90, height: 6, background: '#0e1e30', borderRadius: 2, border: `1px solid ${C.border}` }}>
@@ -782,10 +797,12 @@ export default function Home() {
                     </div>
                     <span style={{ fontFamily: 'VT323, monospace', fontSize: 12, color: C.dimmer }}>{XP}/{NEXT_XP}</span>
                   </div>
+                  <SoundToggle />
                   <nav style={{ display: 'flex', gap: 2 }}>
                     {[['HOME','hero'],['SKILLS','skills'],['QUESTS','quests'],['CONTACT','contact']].map(([label, id]) => (
                       <button key={id} className="nav-btn clickable"
-                        onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })}>
+                        onMouseEnter={() => SoundEngine.hover()}
+                        onClick={() => { SoundEngine.click(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }}>
                         {label}
                       </button>
                     ))}
@@ -796,51 +813,41 @@ export default function Home() {
 
             <main style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px' }}>
 
-              {/* ── HERO ────────────────────────────────────── */}
+              {/* HERO */}
               <section id="hero" style={{ paddingTop: 80, paddingBottom: 72 }}>
-                <motion.div
-                  className="hero-grid"
-                  variants={heroContainer}
-                  initial="hidden"
-                  animate="show"
-                  style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 48, alignItems: 'center' }}
-                >
+                <motion.div className="hero-grid" variants={heroContainer} initial="hidden" animate="show"
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 48, alignItems: 'center' }}>
                   <div>
                     <motion.div variants={heroItem} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
                       <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}`, animation: 'glowPulse 2s infinite' }} />
                       <span style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.green, letterSpacing: 2 }}>ONLINE · OPEN TO OPPORTUNITIES</span>
                     </motion.div>
 
-                    <motion.h1 variants={heroItem}
-                      style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 'clamp(22px, 3.5vw, 38px)', lineHeight: 1.5, marginBottom: 22, color: '#e6eef6' }}>
-                      HI, I'M{' '}
-                      <span style={{ color: C.green, textShadow: `0 0 20px ${C.green}66, 0 0 40px ${C.green}33` }}>MARK.</span>
+                    <motion.h1 variants={heroItem} style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 'clamp(22px, 3.5vw, 38px)', lineHeight: 1.5, marginBottom: 22, color: '#e6eef6' }}>
+                      HI, I'M <span style={{ color: C.green, textShadow: `0 0 20px ${C.green}66, 0 0 40px ${C.green}33` }}>MARK.</span>
                     </motion.h1>
 
-                    <motion.div variants={heroItem}
-                      style={{ fontFamily: 'VT323, monospace', fontSize: 24, marginBottom: 26, color: C.cyan, letterSpacing: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <span style={{ color: C.dimmer }}>&gt; </span>
-                      <span>{typed}</span>
+                    <motion.div variants={heroItem} style={{ fontFamily: 'VT323, monospace', fontSize: 24, marginBottom: 26, color: C.cyan, letterSpacing: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <span style={{ color: C.dimmer }}>&gt; </span><span>{typed}</span>
                       <span style={{ animation: 'blink 1s step-end infinite', color: C.cyan }}>_</span>
                     </motion.div>
 
-                    <motion.p variants={heroItem}
-                      style={{ fontFamily: 'Silkscreen, monospace', fontSize: 14, lineHeight: 1.85, marginBottom: 36, color: C.dim, maxWidth: 560 }}>
-                      {YEARS_EXP}+ years turning complex systems into solutions —
-                      from clinical trial platforms to IoT hardware.{' '}
+                    <motion.p variants={heroItem} style={{ fontFamily: 'Silkscreen, monospace', fontSize: 14, lineHeight: 1.85, marginBottom: 36, color: C.dim, maxWidth: 560 }}>
+                      {YEARS_EXP}+ years turning complex systems into solutions — from clinical trial platforms to IoT hardware.{' '}
                       <span style={{ color: C.green }}>Now expanding into backend engineering</span>{' '}
                       because understanding the full stack makes you a better engineer at every layer.
                     </motion.p>
 
                     <motion.div variants={heroItem} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <button className="cta clickable" onClick={() => document.getElementById('quests')?.scrollIntoView({ behavior: 'smooth' })}>
+                      <button className="cta clickable" onMouseEnter={() => SoundEngine.hover()}
+                        onClick={() => { SoundEngine.click(); document.getElementById('quests')?.scrollIntoView({ behavior: 'smooth' }) }}>
                         VIEW QUEST LOG
                       </button>
-                      <button className="ghost clickable" onClick={() => setShowContact(true)}>
+                      <button className="ghost clickable" onMouseEnter={() => SoundEngine.hover()} onClick={handleContactOpen}>
                         SEND MESSAGE
                       </button>
                       <a href="https://github.com/markjpdev" target="_blank" rel="noreferrer">
-                        <button className="ghost clickable">GITHUB</button>
+                        <button className="ghost clickable" onMouseEnter={() => SoundEngine.hover()} onClick={() => SoundEngine.click()}>GITHUB</button>
                       </a>
                     </motion.div>
                   </div>
@@ -849,7 +856,6 @@ export default function Home() {
                   <motion.div className="char-card" variants={heroCard} style={{ animation: 'float 4s ease-in-out infinite' }}>
                     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: 22, position: 'relative', overflow: 'hidden', boxShadow: `0 0 40px rgba(0,229,165,0.07), 0 24px 64px rgba(0,0,0,0.5)` }}>
                       <Brackets />
-
                       <div style={{ textAlign: 'center', marginBottom: 18 }}>
                         <div style={{ width: 72, height: 72, margin: '0 auto 12px', background: `linear-gradient(135deg, ${C.green}22, ${C.cyan}22)`, border: `2px solid ${C.green}66`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Press Start 2P', monospace", fontSize: 11, color: C.green, boxShadow: `0 0 20px ${C.green}22` }}>MJP</div>
                         <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 9, color: '#e6eef6' }}>MARK JP</div>
@@ -880,7 +886,8 @@ export default function Home() {
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {ACHIEVEMENTS.map((a, i) => (
                           <div key={a.label} className="ach-badge clickable"
-                            onMouseEnter={() => setHoveredAch(i)} onMouseLeave={() => setHoveredAch(null)}
+                            onMouseEnter={() => { setHoveredAch(i); SoundEngine.hover() }}
+                            onMouseLeave={() => setHoveredAch(null)}
                             style={{ width: 36, height: 36, background: '#071020', border: `1px solid ${C.border}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, position: 'relative' }}>
                             {a.icon}
                             {hoveredAch === i && (
@@ -899,15 +906,15 @@ export default function Home() {
 
               <div className="zone-divider" />
 
-              {/* ── SKILLS ZONE ─────────────────────────────── */}
+              {/* SKILLS */}
               <Zone id="skills" style={{ paddingBottom: 64 }}>
                 <SectionHeader title="CHARACTER STATS" color={C.cyan} sub={`SKILL TIERS · BASED ON ${YEARS_EXP}+ YEARS OF FIELD EXPERIENCE`} />
-
                 <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 52 }}>
                   {SKILL_TIERS.map((tier, i) => (
                     <motion.div key={tier.tier} className="tier-card"
                       initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: '-40px' }} transition={{ delay: i * 0.1, duration: 0.5 }}
+                      onMouseEnter={() => SoundEngine.hover()}
                       style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: `2px solid ${tier.color}`, borderRadius: 6, padding: '18px 20px', position: 'relative', overflow: 'hidden' }}>
                       <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 60, background: `linear-gradient(180deg, ${tier.color}08, transparent)`, pointerEvents: 'none' }} />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -932,6 +939,7 @@ export default function Home() {
                     <motion.div key={t.name} className="tech-item"
                       initial={{ opacity: 0, scale: 0.75 }} whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true, margin: '-20px' }} transition={{ delay: i * 0.04, duration: 0.4 }}
+                      onMouseEnter={() => SoundEngine.hover()}
                       style={{ background: t.bg, border: `1px solid ${t.color}44`, borderRadius: 6, padding: '13px 8px', textAlign: 'center' }}>
                       <div style={{ fontSize: 24, marginBottom: 6 }}>{t.symbol}</div>
                       <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: t.color, letterSpacing: 0.5, lineHeight: 1.2 }}>{t.name}</div>
@@ -942,7 +950,7 @@ export default function Home() {
 
               <div className="zone-divider" />
 
-              {/* ── QUEST LOG ZONE ──────────────────────────── */}
+              {/* QUEST LOG */}
               <Zone id="quests" style={{ paddingBottom: 64 }}>
                 <SectionHeader title="QUEST LOG" color={C.gold} sub="PROJECTS · MISSIONS · CLICK CARD TO EXPAND" />
                 <div style={{ display: 'grid', gap: 14 }}>
@@ -952,10 +960,9 @@ export default function Home() {
 
               <div className="zone-divider" />
 
-              {/* ── CONTACT ZONE ────────────────────────────── */}
+              {/* CONTACT */}
               <Zone id="contact" style={{ paddingBottom: 88 }}>
                 <SectionHeader title="SEND TRANSMISSION" color={C.green} sub="OPEN FOR COLLABORATION · JOB OPPORTUNITIES · TECH CHAT" />
-
                 <motion.div initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                   style={{ background: '#030a10', border: `1px solid ${C.border}`, borderRadius: 6, padding: '18px 22px', marginBottom: 20, fontFamily: 'VT323, monospace', fontSize: 16, color: C.dim }}>
                   <div style={{ color: C.dimmer, marginBottom: 6, fontSize: 13, letterSpacing: 1 }}>TERMINAL v1.0</div>
@@ -969,17 +976,19 @@ export default function Home() {
 
                 <div className="contact-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {[
-                    { icon: '📧', label: 'EMAIL',    value: 'mark@markjp.dev',         href: 'mailto:mark@markjp.dev',                color: C.green },
-                    { icon: '🐙', label: 'GITHUB',   value: 'github.com/markjpdev',    href: 'https://github.com/markjpdev',          color: C.cyan  },
+                    { icon: '📧', label: 'EMAIL',    value: 'mark@markjp.dev',         href: 'mailto:mark@markjp.dev',                 color: C.green },
+                    { icon: '🐙', label: 'GITHUB',   value: 'github.com/markjpdev',    href: 'https://github.com/markjpdev',           color: C.cyan  },
                     { icon: '💼', label: 'LINKEDIN', value: 'in/jaysonpunsalan',       href: 'https://linkedin.com/in/jaysonpunsalan', color: C.cyan  },
-                    { icon: '🌐', label: 'WEBSITE',  value: 'markjp.dev',              href: 'https://markjp.dev',                    color: C.green },
+                    { icon: '🌐', label: 'WEBSITE',  value: 'markjp.dev',              href: 'https://markjp.dev',                     color: C.green },
                   ].map((item, i) => (
                     <motion.a key={item.label} href={item.href}
                       target={item.href.startsWith('mailto') ? undefined : '_blank'} rel="noreferrer"
                       className="contact-link clickable"
                       initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = item.color; e.currentTarget.style.background = `${item.color}0a` }}
+                      onMouseEnter={() => SoundEngine.hover()}
+                      onClick={() => SoundEngine.click()}
+                      onMouseEnter={e => { SoundEngine.hover(); e.currentTarget.style.borderColor = item.color; e.currentTarget.style.background = `${item.color}0a` }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card }}>
                       <span style={{ fontSize: 26 }}>{item.icon}</span>
                       <div>
@@ -990,61 +999,38 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Quick message button */}
                 <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.4 }}
                   style={{ marginTop: 20, textAlign: 'center' }}>
-                  <button className="ghost clickable" style={{ fontSize: 16 }} onClick={() => setShowContact(true)}>
+                  <button className="ghost clickable" style={{ fontSize: 16 }}
+                    onMouseEnter={() => SoundEngine.hover()} onClick={handleContactOpen}>
                     ✉️ COMPOSE MESSAGE
                   </button>
                 </motion.div>
               </Zone>
             </main>
 
-            {/* ── FOOTER ──────────────────────────────────── */}
-            <footer style={{ borderTop: `1px solid ${C.border}`, padding: '24px', textAlign: 'center', background: `${C.bg}cc`, position: 'relative' }}>
-              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 8, color: C.green, letterSpacing: 2, marginBottom: 8 }}>
-                ── GAME SAVED ──
-              </div>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: 1 }}>
-                © {new Date().getFullYear()} MARK JP · BUILT WITH NEXT.JS + FRAMER MOTION · v4.0.0
-              </div>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: `${C.dimmer}77`, marginTop: 4, letterSpacing: 1 }}>
-                THANK YOU FOR PLAYING_
-              </div>
+            {/* FOOTER */}
+            <footer style={{ borderTop: `1px solid ${C.border}`, padding: '24px', textAlign: 'center', background: `${C.bg}cc` }}>
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 8, color: C.green, letterSpacing: 2, marginBottom: 8 }}>── GAME SAVED ──</div>
+              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: 1 }}>© {new Date().getFullYear()} MARK JP · BUILT WITH NEXT.JS + FRAMER MOTION · v4.1.0</div>
+              <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: `${C.dimmer}77`, marginTop: 4, letterSpacing: 1 }}>THANK YOU FOR PLAYING_</div>
             </footer>
-
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── CONTACT MODAL ───────────────────────────────────── */}
+      {/* CONTACT MODAL */}
       <AnimatePresence>
         {showContact && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="modal-overlay clickable"
-            onClick={(e) => { if (e.target === e.currentTarget) setShowContact(false) }}
-            style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '28px 32px', width: '100%', maxWidth: 480, position: 'relative' }}
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) handleContactClose() }}
+            style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '28px 32px', width: '100%', maxWidth: 480, position: 'relative' }}>
               <Brackets color={C.green} size={10} />
-
-              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 10, color: C.green, marginBottom: 6, letterSpacing: 1 }}>
-                COMPOSE MESSAGE
-              </div>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, marginBottom: 24, letterSpacing: 1 }}>
-                DIRECT LINE TO: mark@markjp.dev
-              </div>
-
-              <ContactForm onClose={() => setShowContact(false)} />
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 10, color: C.green, marginBottom: 6, letterSpacing: 1 }}>COMPOSE MESSAGE</div>
+              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, marginBottom: 24, letterSpacing: 1 }}>DIRECT LINE TO: mark@markjp.dev</div>
+              <ContactForm onClose={handleContactClose} />
             </motion.div>
           </motion.div>
         )}
@@ -1053,69 +1039,61 @@ export default function Home() {
   )
 }
 
-// ── Contact Form ────────────────────────────────────────────────
+// ── Contact Form ─────────────────────────────────────────────────
 function ContactForm({ onClose }) {
   const [fields, setFields] = useState({ name: '', email: '', message: '' })
-  const [status, setStatus] = useState('idle') // idle | sending | sent | error
+  const [status, setStatus] = useState('idle')
 
   const inputStyle = {
-    width: '100%', background: '#071020',
-    border: `1px solid ${C.border}`, borderRadius: 4,
-    padding: '10px 14px', color: '#e6eef6',
-    fontFamily: 'VT323, monospace', fontSize: 17,
-    outline: 'none', transition: 'border-color 0.2s',
-    marginBottom: 14,
+    width: '100%', background: '#071020', border: `1px solid ${C.border}`, borderRadius: 4,
+    padding: '10px 14px', color: '#e6eef6', fontFamily: 'VT323, monospace', fontSize: 17,
+    outline: 'none', transition: 'border-color 0.2s', marginBottom: 14,
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setStatus('sending')
-    // Opens mailto as fallback — replace with EmailJS in Round 3
+    SoundEngine.gameSaved()
     const subject = encodeURIComponent(`Message from ${fields.name}`)
-    const body = encodeURIComponent(`From: ${fields.name}\nEmail: ${fields.email}\n\n${fields.message}`)
+    const body    = encodeURIComponent(`From: ${fields.name}\nEmail: ${fields.email}\n\n${fields.message}`)
     window.open(`mailto:mark@markjp.dev?subject=${subject}&body=${body}`)
-    setTimeout(() => { setStatus('sent') }, 500)
+    setTimeout(() => setStatus('sent'), 600)
   }
 
-  if (status === 'sent') {
-    return (
-      <div style={{ textAlign: 'center', padding: '20px 0' }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>✅</div>
-        <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 9, color: C.green, marginBottom: 8 }}>MESSAGE SENT!</div>
-        <div style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dim, marginBottom: 20 }}>Your mail app should have opened. Talk soon!</div>
-        <button className="ghost clickable" onClick={onClose} style={{ fontSize: 16 }}>CLOSE</button>
-      </div>
-    )
-  }
+  if (status === 'sent') return (
+    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+      <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
+      <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 9, color: C.green, marginBottom: 8 }}>MESSAGE SENT!</div>
+      <div style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dim, marginBottom: 20 }}>Your mail app should have opened. Talk soon!</div>
+      <button className="ghost clickable" onClick={onClose} onMouseEnter={() => SoundEngine.hover()} style={{ fontSize: 16 }}>CLOSE</button>
+    </div>
+  )
 
   return (
     <form onSubmit={handleSubmit}>
-      <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: 1, marginBottom: 4 }}>NAME</div>
-      <input style={inputStyle} placeholder="Your name..." value={fields.name}
-        onChange={e => setFields(f => ({ ...f, name: e.target.value }))} required
-        onFocus={e => e.target.style.borderColor = C.green}
-        onBlur={e => e.target.style.borderColor = C.border} />
-
-      <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: 1, marginBottom: 4 }}>EMAIL</div>
-      <input style={inputStyle} type="email" placeholder="your@email.com" value={fields.email}
-        onChange={e => setFields(f => ({ ...f, email: e.target.value }))} required
-        onFocus={e => e.target.style.borderColor = C.green}
-        onBlur={e => e.target.style.borderColor = C.border} />
-
+      {[
+        { key: 'name',    label: 'NAME',    type: 'text',  placeholder: 'Your name...' },
+        { key: 'email',   label: 'EMAIL',   type: 'email', placeholder: 'your@email.com' },
+      ].map(f => (
+        <div key={f.key}>
+          <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: 1, marginBottom: 4 }}>{f.label}</div>
+          <input style={inputStyle} type={f.type} placeholder={f.placeholder} value={fields[f.key]} required
+            onChange={e => setFields(p => ({ ...p, [f.key]: e.target.value }))}
+            onFocus={e => e.target.style.borderColor = C.green}
+            onBlur={e => e.target.style.borderColor = C.border} />
+        </div>
+      ))}
       <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: 1, marginBottom: 4 }}>MESSAGE</div>
       <textarea style={{ ...inputStyle, minHeight: 100, resize: 'vertical', marginBottom: 20 }}
-        placeholder="Type your message..." value={fields.message}
-        onChange={e => setFields(f => ({ ...f, message: e.target.value }))} required
+        placeholder="Type your message..." value={fields.message} required
+        onChange={e => setFields(p => ({ ...p, message: e.target.value }))}
         onFocus={e => e.target.style.borderColor = C.green}
         onBlur={e => e.target.style.borderColor = C.border} />
-
       <div style={{ display: 'flex', gap: 10 }}>
-        <button type="submit" className="cta clickable" style={{ flex: 1 }}>
+        <button type="submit" className="cta clickable" style={{ flex: 1 }} onMouseEnter={() => SoundEngine.hover()}>
           {status === 'sending' ? 'SENDING...' : 'TRANSMIT ▶'}
         </button>
-        <button type="button" className="ghost clickable" onClick={onClose} style={{ fontSize: 16 }}>
-          CANCEL
-        </button>
+        <button type="button" className="ghost clickable" onClick={onClose} onMouseEnter={() => SoundEngine.hover()} style={{ fontSize: 16 }}>CANCEL</button>
       </div>
     </form>
   )
