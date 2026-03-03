@@ -648,32 +648,54 @@ const GLASS_CFG = {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LANTERN SCENE — Octopath Traveler II aesthetic
-//  Single warm lantern in deep darkness · floating chapter cards
-//  bokeh depth-of-field particles · firefly motes · fade-to-black nav
+//  SOLOPATH SCENE — Octopath Traveler II aesthetic, ultra-detailed
+//  3-layer parallax · god rays · cobblestone ground · detailed lantern
+//  pixel-art character silhouette · ember particles · film grain
+//  proximity-based card brightness · mouse parallax · firefly motes
 // ═══════════════════════════════════════════════════════════════
 function LanternScene({ onNavigate, onHover }) {
   const canvasRef = useRef(null)
   const rafRef    = useRef(null)
   const hovRef    = useRef(null)
   const hitRef    = useRef({})
+  const mouseRef  = useRef({ x: 0.5, y: 0.5 })
+  const grainRef  = useRef(null)
+  const grainTick = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx    = canvas.getContext('2d')
     let W = 0, H = 0, t = 0
 
-    // Bokeh particles (depth-of-field atmosphere)
-    const bokeh = []
-    // Firefly motes near lantern
-    const motes = []
+    // ── Particle pools ──
+    const bokeh   = []   // mid-layer depth-of-field orbs
+    const farBokeh= []   // far-layer faint orbs (very slow)
+    const embers  = []   // rising ember sparks from flame
+    const motes   = []   // firefly orbital motes near lantern
 
+    // ── Chapter card configuration ──
     const CARDS = [
-      { id: 'profile', label: 'PROFILE',   sub: 'Character · Story',   ix: -0.25, iy: -0.22 },
-      { id: 'skills',  label: 'ABILITIES', sub: 'Skills · Mastery',     ix:  0.25, iy: -0.22 },
-      { id: 'quests',  label: 'QUEST LOG', sub: 'Projects · Archive',   ix: -0.25, iy:  0.22 },
-      { id: 'contact', label: 'MESSAGE',   sub: 'Send · Connect',        ix:  0.25, iy:  0.22 },
+      { id: 'profile', label: 'PROFILE',   roman: 'I',   sub: 'Character · Story',  ix: -0.25, iy: -0.22 },
+      { id: 'skills',  label: 'ABILITIES', roman: 'II',  sub: 'Skills · Mastery',    ix:  0.25, iy: -0.22 },
+      { id: 'quests',  label: 'QUEST LOG', roman: 'III', sub: 'Projects · Archive',  ix: -0.25, iy:  0.22 },
+      { id: 'contact', label: 'MESSAGE',   roman: 'IV',  sub: 'Send · Connect',      ix:  0.25, iy:  0.22 },
     ]
+
+    // ── Pre-computed film grain (256×256 noise texture, refreshed every 6 frames) ──
+    const buildGrain = () => {
+      const gc = document.createElement('canvas')
+      gc.width = 256; gc.height = 256
+      const gx = gc.getContext('2d')
+      const id = gx.createImageData(256, 256)
+      for (let i = 0; i < id.data.length; i += 4) {
+        const v = (Math.random() * 255) | 0
+        id.data[i] = id.data[i+1] = id.data[i+2] = v
+        id.data[i+3] = 255
+      }
+      gx.putImageData(id, 0, 0)
+      grainRef.current = gc
+    }
+    buildGrain()
 
     const resize = () => {
       const pr = Math.min(window.devicePixelRatio || 1, 2)
@@ -681,291 +703,813 @@ function LanternScene({ onNavigate, onHover }) {
       canvas.width = W * pr; canvas.height = H * pr
       ctx.setTransform(pr, 0, 0, pr, 0, 0)
       if (bokeh.length === 0) {
-        for (let i = 0; i < 80; i++) bokeh.push({
-          x: Math.random() * W, y: Math.random() * H,
-          r: 1.2 + Math.random() * 10,
-          op: 0.04 + Math.random() * 0.22,
-          vy: 0.04 + Math.random() * 0.16,
-          vx: (Math.random() - 0.5) * 0.06,
-          ph: Math.random() * Math.PI * 2,
-          col: ['#F0D070','#C8A84B','#FFE8B0','#E8C87A','#FFF4D0'][Math.floor(Math.random()*5)],
+        // Far bokeh — large, very faint, slow
+        for (let i = 0; i < 40; i++) farBokeh.push({
+          x: Math.random()*W, y: Math.random()*H,
+          r: 14+Math.random()*28,
+          op: 0.016+Math.random()*0.06,
+          vy: 0.018+Math.random()*0.05,
+          vx: (Math.random()-0.5)*0.025,
+          ph: Math.random()*Math.PI*2,
+          col: ['#F0C870','#C8A84B','#FFE8B0','#E8B860'][Math.floor(Math.random()*4)],
         })
-        for (let i = 0; i < 20; i++) motes.push({
-          ang: Math.random() * Math.PI * 2,
-          rad: 18 + Math.random() * 55,
-          spd: (Math.random() - 0.5) * 0.006,
-          ph:  Math.random() * Math.PI * 2,
-          sz:  0.7 + Math.random() * 1.4,
+        // Mid bokeh — medium, warm
+        for (let i = 0; i < 55; i++) bokeh.push({
+          x: Math.random()*W, y: Math.random()*H,
+          r: 2+Math.random()*9,
+          op: 0.035+Math.random()*0.18,
+          vy: 0.05+Math.random()*0.18,
+          vx: (Math.random()-0.5)*0.06,
+          ph: Math.random()*Math.PI*2,
+          col: ['#F0D070','#C8A84B','#FFE8B0','#FFF4D0','#E8C87A'][Math.floor(Math.random()*5)],
+        })
+        // Ember sparks
+        for (let i = 0; i < 28; i++) embers.push({
+          x: 0, y: 0,
+          vx: (Math.random()-0.5)*0.55,
+          vy: -(0.45+Math.random()*0.9),
+          life: Math.random(),
+          maxLife: 0.7+Math.random()*1.2,
+          sz: 0.7+Math.random()*1.3,
+          ph: Math.random()*Math.PI*2,
+        })
+        // Firefly motes
+        for (let i = 0; i < 22; i++) motes.push({
+          ang: Math.random()*Math.PI*2,
+          rad: 30+Math.random()*90,
+          spd: (Math.random()-0.5)*0.005,
+          ph:  Math.random()*Math.PI*2,
+          sz:  0.8+Math.random()*1.6,
         })
       }
     }
     resize()
 
-    // ── Warm atmospheric background (Octopath deep darkness) ──
-    const drawBg = () => {
-      ctx.fillStyle = '#06040A'
+    // ═══ DRAW: Deep darkness base background ═══
+    const drawBg = (mx, my) => {
+      // Deep space-black
+      ctx.fillStyle = '#060408'
       ctx.fillRect(0, 0, W, H)
-      const vg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.75)
-      vg.addColorStop(0,   'rgba(30,16,4,0.0)')
-      vg.addColorStop(0.5, 'rgba(8,4,1,0.4)')
-      vg.addColorStop(1,   'rgba(0,0,0,0.9)')
+
+      // ── Far silhouette layer (city/treeline roofscape) ──
+      // Parallax offset: slowest layer (-20px max)
+      const fParX = (mx - 0.5) * -20
+      const fParY = (my - 0.5) * -10
+      ctx.save()
+      ctx.translate(fParX, fParY)
+
+      // Draw irregular rooftop skyline silhouette
+      ctx.fillStyle = 'rgba(4,3,8,0.92)'
+      ctx.beginPath()
+      ctx.moveTo(-30, H)
+      // Generate rooftop peaks from a deterministic pattern
+      const peaks = [
+        [0,0.72],[0.04,0.60],[0.07,0.62],[0.09,0.52],[0.13,0.68],[0.17,0.44],
+        [0.20,0.62],[0.23,0.48],[0.27,0.66],[0.30,0.55],[0.32,0.57],[0.35,0.41],
+        [0.38,0.58],[0.41,0.52],[0.44,0.65],[0.47,0.48],[0.50,0.43],[0.53,0.55],
+        [0.56,0.60],[0.59,0.47],[0.62,0.53],[0.65,0.40],[0.68,0.56],[0.71,0.62],
+        [0.74,0.50],[0.77,0.45],[0.80,0.58],[0.83,0.53],[0.87,0.64],[0.90,0.50],
+        [0.93,0.68],[0.96,0.55],[1.00,0.62],[1.03,0.72],
+      ]
+      peaks.forEach(([xr, yr]) => ctx.lineTo(xr * W, yr * H))
+      ctx.lineTo(W+30, H); ctx.closePath(); ctx.fill()
+
+      // Faint warm glow at horizon behind roofline
+      const horizG = ctx.createLinearGradient(0, H*0.48, 0, H*0.72)
+      horizG.addColorStop(0,   'rgba(80,45,10,0.08)')
+      horizG.addColorStop(0.5, 'rgba(50,28,6,0.04)')
+      horizG.addColorStop(1,   'transparent')
+      ctx.fillStyle = horizG; ctx.fillRect(0, H*0.40, W, H*0.35)
+
+      ctx.restore()
+
+      // ── Vignette (deep black edges) ──
+      const vg = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.2, W/2, H/2, Math.max(W,H)*0.85)
+      vg.addColorStop(0,   'transparent')
+      vg.addColorStop(0.6, 'rgba(2,1,4,0.25)')
+      vg.addColorStop(1,   'rgba(0,0,0,0.90)')
       ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H)
     }
 
-    // ── Lantern ambient glow ──
+    // ═══ DRAW: Cobblestone ground ═══
+    const drawGround = (lx, ly, fs) => {
+      const groundY = ly + H * 0.32  // ground plane below lantern
+      const ph = (mouseRef.current.x - 0.5) * -35  // parallax
+
+      ctx.save()
+      ctx.translate(ph, 0)
+
+      // Ground plane fill (dark stone)
+      const groundG = ctx.createLinearGradient(lx, groundY - 10, lx, groundY + H * 0.4)
+      groundG.addColorStop(0,   'rgba(14,9,4,0.0)')
+      groundG.addColorStop(0.08,'rgba(14,9,4,0.85)')
+      groundG.addColorStop(0.3, 'rgba(8,5,2,0.98)')
+      groundG.addColorStop(1,   '#050302')
+      ctx.fillStyle = groundG
+      ctx.fillRect(-50, groundY - 10, W + 100, H * 0.5)
+
+      // Warm light pool on ground directly below lantern
+      const lightPool = ctx.createRadialGradient(lx, groundY, 0, lx, groundY, W * 0.28 * fs)
+      lightPool.addColorStop(0,   `rgba(200,140,40,${0.22*fs})`)
+      lightPool.addColorStop(0.3, `rgba(150,90,20,${0.12*fs})`)
+      lightPool.addColorStop(0.7, `rgba(100,55,10,${0.05*fs})`)
+      lightPool.addColorStop(1,   'transparent')
+      ctx.fillStyle = lightPool
+      ctx.beginPath()
+      ctx.ellipse(lx, groundY, W * 0.28 * fs, H * 0.07 * fs, 0, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Draw individual cobblestones (perspective-scaled rows)
+      const stoneRows = 6
+      const stoneCols = 14
+      for (let row = 0; row < stoneRows; row++) {
+        const rowFrac = (row + 1) / stoneRows
+        const ry = groundY + rowFrac * H * 0.22
+        const rowW = W * (0.3 + rowFrac * 1.1)
+        const rowH = 8 + rowFrac * 12
+        const startX = lx - rowW / 2
+
+        for (let col = 0; col < stoneCols; col++) {
+          const sx = startX + (col / stoneCols) * rowW + (row % 2) * (rowW / stoneCols / 2)
+          const sw = (rowW / stoneCols) - 2
+          const sh = rowH - 1.5
+
+          // Stone color varies with distance from light pool
+          const dx = sx + sw/2 - lx, dy = ry - groundY
+          const dist = Math.sqrt(dx*dx + dy*dy*9) / (W * 0.25)
+          const brightness = Math.max(0, 1 - dist) * fs
+          const r = Math.floor(22 + brightness * 60)
+          const g = Math.floor(14 + brightness * 30)
+          const b = Math.floor(6  + brightness * 10)
+
+          ctx.fillStyle = `rgb(${r},${g},${b})`
+          ctx.fillRect(sx, ry - sh/2, sw, sh)
+
+          // Mortar gap (very dark line)
+          ctx.strokeStyle = 'rgba(3,2,1,0.7)'
+          ctx.lineWidth = 1
+          ctx.strokeRect(sx, ry - sh/2, sw, sh)
+        }
+      }
+
+      ctx.restore()
+    }
+
+    // ═══ DRAW: God rays from lantern ═══
+    const drawGodRays = (lx, ly, t) => {
+      const rayCount = 9
+      const rayLen = Math.max(W, H) * 0.85
+      const baseAngle = t * 0.012  // very slow rotation
+
+      ctx.save()
+      ctx.globalCompositeOperation = 'lighter'
+
+      for (let i = 0; i < rayCount; i++) {
+        const angle = baseAngle + (i / rayCount) * Math.PI * 2
+        const halfSpread = 0.045 + Math.sin(t * 0.3 + i * 1.7) * 0.018
+        const opacity = (0.022 + Math.sin(t * 0.5 + i * 2.1) * 0.012) * (0.7 + 0.3 * Math.sin(t * 1.2 + i))
+
+        const x1 = lx + Math.cos(angle - halfSpread) * rayLen
+        const y1 = ly + Math.sin(angle - halfSpread) * rayLen
+        const x2 = lx + Math.cos(angle + halfSpread) * rayLen
+        const y2 = ly + Math.sin(angle + halfSpread) * rayLen
+
+        const rayG = ctx.createLinearGradient(lx, ly, (x1+x2)/2, (y1+y2)/2)
+        rayG.addColorStop(0,   `rgba(255,220,120,${opacity})`)
+        rayG.addColorStop(0.35,`rgba(220,160,60,${opacity*0.45})`)
+        rayG.addColorStop(1,   'transparent')
+
+        ctx.beginPath()
+        ctx.moveTo(lx, ly)
+        ctx.lineTo(x1, y1)
+        ctx.lineTo(x2, y2)
+        ctx.closePath()
+        ctx.fillStyle = rayG
+        ctx.fill()
+      }
+
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.restore()
+    }
+
+    // ═══ DRAW: Lantern ambient glow ═══
     const drawGlow = (lx, ly, fs) => {
-      // Far outer warmth
-      const og = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.min(W,H)*0.55*fs)
-      og.addColorStop(0,   `rgba(180,110,30,${0.18*fs})`)
-      og.addColorStop(0.4, `rgba(120,65,10,${0.09*fs})`)
+      // Wide outer warmth halo
+      const og = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.min(W,H) * 0.60 * fs)
+      og.addColorStop(0,   `rgba(200,120,30,${0.22*fs})`)
+      og.addColorStop(0.3, `rgba(160,80,15,${0.12*fs})`)
+      og.addColorStop(0.7, `rgba(100,50,8,${0.05*fs})`)
       og.addColorStop(1,   'transparent')
       ctx.fillStyle = og
-      ctx.beginPath(); ctx.ellipse(lx, ly, Math.min(W,H)*0.55*fs, Math.min(W,H)*0.65*fs, 0, 0, Math.PI*2); ctx.fill()
-      // Inner bright bloom
-      const ig = ctx.createRadialGradient(lx, ly, 0, lx, ly, 90*fs)
-      ig.addColorStop(0,   `rgba(255,240,180,${0.60*fs})`)
-      ig.addColorStop(0.25,`rgba(240,180,60,${0.30*fs})`)
-      ig.addColorStop(0.7, `rgba(180,100,20,${0.10*fs})`)
-      ig.addColorStop(1,   'transparent')
-      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(lx, ly, 90*fs, 0, Math.PI*2); ctx.fill()
+      ctx.beginPath()
+      ctx.ellipse(lx, ly, Math.min(W,H)*0.60*fs, Math.min(W,H)*0.72*fs, 0, 0, Math.PI*2)
+      ctx.fill()
+
+      // Inner intense bloom
+      const ig = ctx.createRadialGradient(lx, ly, 0, lx, ly, 110 * fs)
+      ig.addColorStop(0,    `rgba(255,248,200,${0.65*fs})`)
+      ig.addColorStop(0.18, `rgba(255,210,80,${0.40*fs})`)
+      ig.addColorStop(0.55, `rgba(220,130,30,${0.15*fs})`)
+      ig.addColorStop(1,    'transparent')
+      ctx.fillStyle = ig
+      ctx.beginPath(); ctx.arc(lx, ly, 110*fs, 0, Math.PI*2); ctx.fill()
+
+      // Corona ring (sharp-edged gleam at the lantern body)
+      ctx.globalAlpha = 0.18 * fs
+      ctx.fillStyle = 'rgba(255,240,160,1)'
+      ctx.beginPath(); ctx.arc(lx, ly, 10*fs, 0, Math.PI*2); ctx.fill()
+      ctx.globalAlpha = 1
     }
 
-    // ── Wrought-iron lantern frame ──
-    const drawFrame = (lx, ly) => {
-      const fw = 20, fh = 34, hk = 18
-      ctx.lineWidth = 1.1
-      // Hook chain
-      ctx.setLineDash([2,3])
-      ctx.strokeStyle = 'rgba(180,140,55,0.5)'
-      ctx.beginPath(); ctx.moveTo(lx, ly-fh-hk); ctx.lineTo(lx, ly-fh); ctx.stroke()
+    // ═══ DRAW: Detailed wrought-iron lantern (hexagonal, ~220px tall) ═══
+    const drawLantern = (lx, ly) => {
+      // Scale lantern to canvas height — it should be ~36% of H, min 120px
+      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
+      const lh = 220 * SCALE   // total lantern body height
+      const lw = 64  * SCALE   // half-width at widest
+      const top = ly - lh * 0.5
+      const bot = ly + lh * 0.5
+      const chainLen = lh * 0.55  // chain above top
+
+      // ── Hanging chain / mount ──
+      ctx.save()
+      ctx.strokeStyle = 'rgba(180,145,60,0.55)'
+      ctx.lineWidth = 1.5 * SCALE
+      // Decorative bracket arms
+      ctx.beginPath()
+      ctx.moveTo(lx - 18*SCALE, top - chainLen * 0.28)
+      ctx.quadraticCurveTo(lx - 10*SCALE, top - chainLen * 0.08, lx, top - chainLen*0.0)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(lx + 18*SCALE, top - chainLen * 0.28)
+      ctx.quadraticCurveTo(lx + 10*SCALE, top - chainLen * 0.08, lx, top - chainLen*0.0)
+      ctx.stroke()
+
+      // Chain links (dashed)
+      ctx.setLineDash([3*SCALE, 2.5*SCALE])
+      ctx.strokeStyle = 'rgba(200,162,65,0.45)'
+      ctx.lineWidth = 1.2 * SCALE
+      ctx.beginPath(); ctx.moveTo(lx, top - chainLen); ctx.lineTo(lx, top); ctx.stroke()
       ctx.setLineDash([])
-      // Top cap
-      ctx.strokeStyle = 'rgba(200,160,60,0.75)'
+
+      // Wall mount circle
+      ctx.fillStyle = 'rgba(180,145,60,0.5)'
+      ctx.beginPath(); ctx.arc(lx, top - chainLen, 5*SCALE, 0, Math.PI*2); ctx.fill()
+      ctx.restore()
+
+      // ── Pointed roof cap (pyramid-hex) ──
+      const roofBot = top + 14 * SCALE
+      ctx.save()
+      ctx.fillStyle = '#1a1106'
+      ctx.strokeStyle = 'rgba(220,175,65,0.82)'
+      ctx.lineWidth = 1.4 * SCALE
+      // Main roof pyramid
       ctx.beginPath()
-      ctx.moveTo(lx-fw*0.8, ly-fh)
-      ctx.lineTo(lx-fw*0.4, ly-fh-6)
-      ctx.lineTo(lx, ly-fh-9)
-      ctx.lineTo(lx+fw*0.4, ly-fh-6)
-      ctx.lineTo(lx+fw*0.8, ly-fh); ctx.stroke()
-      // Bottom cap
-      ctx.beginPath(); ctx.moveTo(lx-fw*0.6, ly+fh); ctx.lineTo(lx, ly+fh+5); ctx.lineTo(lx+fw*0.6, ly+fh); ctx.stroke()
-      // Side bars (2 per side)
-      ctx.strokeStyle = 'rgba(180,140,55,0.5)'
-      ctx.lineWidth = 0.7
-      ;[-fw, -fw*0.35, fw*0.35, fw].forEach(ox => {
-        ctx.beginPath(); ctx.moveTo(lx+ox, ly-fh); ctx.lineTo(lx+ox, ly+fh); ctx.stroke()
+      ctx.moveTo(lx, top - 20 * SCALE)            // peak
+      ctx.lineTo(lx - lw * 0.55, roofBot)
+      ctx.lineTo(lx - lw * 0.82, roofBot - 6*SCALE)
+      ctx.lineTo(lx + lw * 0.82, roofBot - 6*SCALE)
+      ctx.lineTo(lx + lw * 0.55, roofBot)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+
+      // Roof finial ball at peak
+      ctx.fillStyle = 'rgba(220,175,65,0.9)'
+      ctx.beginPath(); ctx.arc(lx, top - 22*SCALE, 4*SCALE, 0, Math.PI*2); ctx.fill()
+      ctx.strokeStyle = 'rgba(255,220,100,0.6)'
+      ctx.lineWidth = 0.8*SCALE
+      ctx.stroke()
+
+      // Decorative roof ribs (6 ribs from peak to edge)
+      ctx.strokeStyle = 'rgba(200,160,55,0.40)'
+      ctx.lineWidth = 0.8 * SCALE
+      for (let i = 0; i < 6; i++) {
+        const frac = (i + 0.5) / 6
+        const ex = lx + (frac - 0.5) * 2 * lw * 0.85
+        ctx.beginPath()
+        ctx.moveTo(lx, top - 20*SCALE)
+        ctx.lineTo(ex, roofBot); ctx.stroke()
+      }
+      ctx.restore()
+
+      // ── Hexagonal body frame ──
+      const bodyTop = roofBot
+      const bodyBot = bot - 12*SCALE
+      const bodyH   = bodyBot - bodyTop
+
+      ctx.save()
+      // Body glass panels fill (warm amber glow)
+      const bodyGrad = ctx.createLinearGradient(lx - lw, bodyTop, lx + lw, bodyTop)
+      bodyGrad.addColorStop(0,   'rgba(40,20,5,0.92)')
+      bodyGrad.addColorStop(0.5, 'rgba(90,50,10,0.85)')
+      bodyGrad.addColorStop(1,   'rgba(40,20,5,0.92)')
+      ctx.fillStyle = bodyGrad
+
+      // Hexagonal body path (6 side columns)
+      ctx.beginPath()
+      ctx.moveTo(lx - lw * 0.92, bodyTop)
+      ctx.lineTo(lx - lw,        bodyTop + bodyH * 0.12)
+      ctx.lineTo(lx - lw,        bodyTop + bodyH * 0.88)
+      ctx.lineTo(lx - lw * 0.92, bodyBot)
+      ctx.lineTo(lx + lw * 0.92, bodyBot)
+      ctx.lineTo(lx + lw,        bodyTop + bodyH * 0.88)
+      ctx.lineTo(lx + lw,        bodyTop + bodyH * 0.12)
+      ctx.lineTo(lx + lw * 0.92, bodyTop)
+      ctx.closePath()
+      ctx.fill()
+
+      // Outer body border
+      ctx.strokeStyle = 'rgba(220,175,65,0.80)'
+      ctx.lineWidth = 1.8 * SCALE
+      ctx.stroke()
+
+      // Inner body border (inset)
+      ctx.strokeStyle = 'rgba(200,155,55,0.28)'
+      ctx.lineWidth = 0.7 * SCALE
+      ctx.strokeRect(lx - lw * 0.85, bodyTop + bodyH*0.04, lw*1.70, bodyH*0.92)
+
+      // Vertical iron bars (4 bars)
+      ctx.strokeStyle = 'rgba(190,150,50,0.65)'
+      ctx.lineWidth = 1.6 * SCALE
+      ;[-lw * 0.55, -lw * 0.18, lw * 0.18, lw * 0.55].forEach(ox => {
+        ctx.beginPath()
+        ctx.moveTo(lx + ox, bodyTop); ctx.lineTo(lx + ox, bodyBot); ctx.stroke()
       })
-      // Horizontal cross-bars
-      ;[-fh*0.4, 0, fh*0.4].forEach(oy => {
-        ctx.beginPath(); ctx.moveTo(lx-fw, ly+oy); ctx.lineTo(lx+fw, ly+oy); ctx.stroke()
+
+      // Horizontal cross-bars (3)
+      ctx.lineWidth = 1.2 * SCALE
+      ctx.strokeStyle = 'rgba(190,150,50,0.55)'
+      ;[0.28, 0.52, 0.76].forEach(frac => {
+        const by = bodyTop + bodyH * frac
+        ctx.beginPath(); ctx.moveTo(lx - lw, by); ctx.lineTo(lx + lw, by); ctx.stroke()
       })
-      // Corner rivets
-      ctx.fillStyle = 'rgba(200,160,60,0.6)'
-      ;[[-fw,ly-fh],[fw,ly-fh],[-fw,ly+fh],[fw,ly+fh]].forEach(([rx,ry]) => {
-        ctx.beginPath(); ctx.arc(lx+rx, ry, 2, 0, Math.PI*2); ctx.fill()
+
+      // Rivet dots at intersections
+      ctx.fillStyle = 'rgba(220,180,70,0.70)'
+      ;[-lw*0.55, -lw*0.18, lw*0.18, lw*0.55].forEach(ox => {
+        ;[0.28, 0.52, 0.76].forEach(frac => {
+          ctx.beginPath()
+          ctx.arc(lx + ox, bodyTop + bodyH * frac, 2.2*SCALE, 0, Math.PI*2)
+          ctx.fill()
+        })
       })
+
+      // Corner body rivets (large)
+      ctx.fillStyle = 'rgba(220,180,70,0.80)'
+      ;[[-lw*0.92, bodyTop], [lw*0.92, bodyTop], [-lw*0.92, bodyBot], [lw*0.92, bodyBot]].forEach(([rx, ry]) => {
+        ctx.beginPath(); ctx.arc(lx + rx, ry, 3.5*SCALE, 0, Math.PI*2); ctx.fill()
+      })
+
+      // Decorative filigree scrollwork on side panels
+      ctx.strokeStyle = 'rgba(200,155,55,0.22)'
+      ctx.lineWidth = 0.6 * SCALE
+      const midY = bodyTop + bodyH * 0.5
+      ;[-lw*0.75, lw*0.75].forEach(ox => {
+        // S-curve scroll
+        ctx.beginPath()
+        ctx.moveTo(lx + ox, midY - bodyH*0.14)
+        ctx.bezierCurveTo(
+          lx + ox + 8*SCALE, midY - bodyH*0.07,
+          lx + ox - 8*SCALE, midY + bodyH*0.07,
+          lx + ox, midY + bodyH*0.14
+        )
+        ctx.stroke()
+      })
+
+      ctx.restore()
+
+      // ── Base cap (lantern bottom) ──
+      ctx.save()
+      ctx.fillStyle = '#1a1106'
+      ctx.strokeStyle = 'rgba(220,175,65,0.80)'
+      ctx.lineWidth = 1.5 * SCALE
+
+      ctx.beginPath()
+      ctx.moveTo(lx - lw*0.92, bodyBot)
+      ctx.lineTo(lx - lw*0.55, bodyBot + 10*SCALE)
+      ctx.lineTo(lx - lw*0.22, bodyBot + 14*SCALE)
+      ctx.lineTo(lx,           bodyBot + 16*SCALE)
+      ctx.lineTo(lx + lw*0.22, bodyBot + 14*SCALE)
+      ctx.lineTo(lx + lw*0.55, bodyBot + 10*SCALE)
+      ctx.lineTo(lx + lw*0.92, bodyBot)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+
+      // Hanging ball finial at bottom
+      const ballY = bot + 8*SCALE
+      const ballR = 7*SCALE
+      const ballG = ctx.createRadialGradient(lx - 1.5*SCALE, ballY - 2*SCALE, 1, lx, ballY, ballR)
+      ballG.addColorStop(0,   'rgba(255,230,120,0.95)')
+      ballG.addColorStop(0.4, 'rgba(200,155,55,0.90)')
+      ballG.addColorStop(1,   'rgba(120,80,20,0.85)')
+      ctx.fillStyle = ballG
+      ctx.beginPath(); ctx.arc(lx, ballY, ballR, 0, Math.PI*2); ctx.fill()
+      ctx.strokeStyle = 'rgba(240,195,75,0.7)'
+      ctx.lineWidth = 0.8*SCALE
+      ctx.stroke()
+
+      // Thin rod connecting body to ball
+      ctx.strokeStyle = 'rgba(200,155,55,0.55)'
+      ctx.lineWidth = 1.2*SCALE
+      ctx.beginPath(); ctx.moveTo(lx, bodyBot + 16*SCALE); ctx.lineTo(lx, ballY - ballR); ctx.stroke()
+
+      ctx.restore()
     }
 
-    // ── Flame (teardrop with flicker) ──
+    // ═══ DRAW: Animated flame (inside lantern body) ═══
     const drawFlame = (lx, ly, fx, fs) => {
-      const fh = 24*fs, fw = 9*fs, tx = lx + fx*0.6
-      // Outer flame
+      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
+      const lh = 220 * SCALE
+      const top = ly - lh * 0.5
+      const roofBot = top + 14 * SCALE
+      const flameBase = ly + 2 * SCALE  // middle of body
+      const fh = 42 * SCALE * fs
+      const fw = 13 * SCALE * fs
+      const tx = lx + fx * 0.7
+
+      // Clip flame to lantern body area so it doesn't overflow
+      ctx.save()
       ctx.beginPath()
-      ctx.moveTo(lx, ly+fh*0.45)
-      ctx.bezierCurveTo(lx-fw, ly, lx-fw*0.9, ly-fh*0.35, tx-fw*0.3, ly-fh)
-      ctx.bezierCurveTo(tx, ly-fh*1.25, tx+fw*0.3, ly-fh*0.75, lx+fw, ly)
-      ctx.bezierCurveTo(lx+fw, ly+fh*0.28, lx+fw*0.4, ly+fh*0.45, lx, ly+fh*0.45)
-      const fg = ctx.createLinearGradient(lx, ly+fh*0.45, lx, ly-fh*1.25)
-      fg.addColorStop(0,   `rgba(180,80,10,${0.95*fs})`)
-      fg.addColorStop(0.4, `rgba(255,170,30,${0.98*fs})`)
-      fg.addColorStop(1,   `rgba(255,255,180,${0.7*fs})`)
-      ctx.fillStyle = fg; ctx.fill()
-      // Inner white core
+      ctx.rect(lx - 62*SCALE, roofBot + 10*SCALE, 124*SCALE, lh * 0.80)
+      ctx.clip()
+
+      // Layer 1: Outer amber flame
       ctx.beginPath()
-      ctx.moveTo(lx, ly+fh*0.28)
-      ctx.bezierCurveTo(lx-fw*0.38, ly, lx-fw*0.28, ly-fh*0.28, tx-fw*0.1, ly-fh*0.82)
-      ctx.bezierCurveTo(tx, ly-fh, tx+fw*0.1, ly-fh*0.55, lx+fw*0.38, ly)
-      ctx.bezierCurveTo(lx+fw*0.38, ly+fh*0.18, lx+fw*0.2, ly+fh*0.28, lx, ly+fh*0.28)
-      const cg = ctx.createLinearGradient(lx, ly+fh*0.28, lx, ly-fh)
-      cg.addColorStop(0,   `rgba(255,200,60,${0.95*fs})`)
-      cg.addColorStop(0.5, `rgba(255,245,160,${0.98*fs})`)
-      cg.addColorStop(1,   `rgba(255,255,255,${0.9*fs})`)
+      ctx.moveTo(lx, flameBase + fh*0.42)
+      ctx.bezierCurveTo(lx - fw*1.1, flameBase, lx - fw*0.8, flameBase - fh*0.4, tx - fw*0.3, flameBase - fh)
+      ctx.bezierCurveTo(tx, flameBase - fh*1.28, tx + fw*0.3, flameBase - fh*0.7, lx + fw*1.1, flameBase)
+      ctx.bezierCurveTo(lx + fw*1.1, flameBase + fh*0.25, lx + fw*0.4, flameBase + fh*0.42, lx, flameBase + fh*0.42)
+      const og = ctx.createLinearGradient(lx, flameBase + fh*0.42, lx, flameBase - fh*1.28)
+      og.addColorStop(0,   `rgba(160,60,5,${0.92*fs})`)
+      og.addColorStop(0.3, `rgba(230,140,20,${0.95*fs})`)
+      og.addColorStop(0.75,`rgba(255,210,80,${0.88*fs})`)
+      og.addColorStop(1,   `rgba(255,255,200,${0.60*fs})`)
+      ctx.fillStyle = og; ctx.fill()
+
+      // Layer 2: Mid orange-yellow core
+      ctx.beginPath()
+      ctx.moveTo(lx, flameBase + fh*0.28)
+      ctx.bezierCurveTo(lx - fw*0.65, flameBase, lx - fw*0.5, flameBase - fh*0.32, tx - fw*0.18, flameBase - fh*0.85)
+      ctx.bezierCurveTo(tx, flameBase - fh*1.10, tx + fw*0.18, flameBase - fh*0.55, lx + fw*0.65, flameBase)
+      ctx.bezierCurveTo(lx + fw*0.65, flameBase + fh*0.18, lx + fw*0.25, flameBase + fh*0.28, lx, flameBase + fh*0.28)
+      const mg2 = ctx.createLinearGradient(lx, flameBase + fh*0.28, lx, flameBase - fh*1.10)
+      mg2.addColorStop(0,   `rgba(255,175,30,${0.96*fs})`)
+      mg2.addColorStop(0.5, `rgba(255,235,120,${0.98*fs})`)
+      mg2.addColorStop(1,   `rgba(255,255,230,${0.80*fs})`)
+      ctx.fillStyle = mg2; ctx.fill()
+
+      // Layer 3: White hot core
+      ctx.beginPath()
+      ctx.moveTo(lx, flameBase + fh*0.14)
+      ctx.bezierCurveTo(lx - fw*0.28, flameBase, lx - fw*0.22, flameBase - fh*0.20, tx - fw*0.06, flameBase - fh*0.58)
+      ctx.bezierCurveTo(tx, flameBase - fh*0.78, tx + fw*0.06, flameBase - fh*0.42, lx + fw*0.28, flameBase)
+      ctx.bezierCurveTo(lx + fw*0.28, flameBase + fh*0.08, lx + fw*0.12, flameBase + fh*0.14, lx, flameBase + fh*0.14)
+      const cg = ctx.createLinearGradient(lx, flameBase + fh*0.14, lx, flameBase - fh*0.78)
+      cg.addColorStop(0,   `rgba(255,220,80,${0.95*fs})`)
+      cg.addColorStop(0.4, `rgba(255,252,200,${0.98*fs})`)
+      cg.addColorStop(1,   `rgba(255,255,255,${0.92*fs})`)
       ctx.fillStyle = cg; ctx.fill()
+
+      ctx.restore()
     }
 
-    // ── Octopath chapter card ──
-    const drawCard = (cx, cy, card, isHov, wobble) => {
-      const cw = Math.min(W*0.34, 148), ch = Math.round(cw*0.60)
-      const x0 = cx-cw/2, y0 = cy-ch/2+wobble
-      const pulse = 0.5+0.5*Math.sin(t*1.7+card.id.charCodeAt(0))
+    // ═══ DRAW: Pixel-art character silhouette ═══
+    const drawCharacter = (lx, ly, t) => {
+      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
+      const lh = 220 * SCALE
+      const groundY = ly + lh * 0.5 + H * 0.32 * 0.5  // approximate ground
+      const charH = 52 * SCALE
+      const bob = Math.sin(t * 1.1) * 2  // idle breathing bob
+      const cx = lx - lh * 0.85  // character stands to the left of lantern
+      const cy = groundY - charH + bob
 
-      // Card fill — very dark warm brown
-      ctx.fillStyle = isHov ? 'rgba(32,20,8,0.97)' : 'rgba(12,7,3,0.92)'
+      ctx.save()
+      ctx.fillStyle = 'rgba(6,4,10,0.95)'  // near-black silhouette
+
+      const px = SCALE * 4  // pixel unit
+
+      // Head
+      ctx.fillRect(cx - px*1.5, cy, px*3, px*3.5)
+      // Neck
+      ctx.fillRect(cx - px*0.5, cy + px*3.5, px, px)
+      // Torso
+      ctx.fillRect(cx - px*2, cy + px*4.5, px*4, px*5.5)
+      // Left shoulder/arm
+      ctx.fillRect(cx - px*3.5, cy + px*4.5, px*1.5, px*1.2)
+      ctx.fillRect(cx - px*3.2, cy + px*5.7, px, px*3.5)
+      // Right shoulder/arm (raised slightly — holding lantern pole)
+      ctx.fillRect(cx + px*2, cy + px*4.5, px*1.5, px*1.2)
+      ctx.fillRect(cx + px*2.2, cy + px*5.7, px, px*3.0)
+      // Cloak / lower body
+      ctx.beginPath()
+      ctx.moveTo(cx - px*2.5, cy + px*10)
+      ctx.lineTo(cx - px*3.2, cy + px*14)
+      ctx.lineTo(cx + px*3.2, cy + px*14)
+      ctx.lineTo(cx + px*2.5, cy + px*10)
+      ctx.closePath(); ctx.fill()
+      // Left leg
+      ctx.fillRect(cx - px*1.8, cy + px*10, px*1.4, px*3.5)
+      // Right leg (step forward)
+      ctx.fillRect(cx + px*0.4, cy + px*10, px*1.4, px*4.2)
+
+      // Rim light from lantern (very faint warm edge)
+      ctx.globalAlpha = 0.18
+      ctx.fillStyle = 'rgba(240,180,60,0.6)'
+      // Right rim
+      ctx.fillRect(cx + px*2, cy, px*0.5, charH)
+      ctx.globalAlpha = 1
+
+      // Cast shadow on ground
+      ctx.globalAlpha = 0.35
+      ctx.fillStyle = 'rgba(4,2,1,0.7)'
+      ctx.save()
+      ctx.transform(1, 0, 0.4, 0.12, 0, 0)
+      ctx.fillRect(cx - px*3, groundY * 1.2 - 5, px*6, px*1.5)
+      ctx.restore()
+      ctx.globalAlpha = 1
+
+      ctx.restore()
+    }
+
+    // ═══ DRAW: Octopath chapter card (enhanced with Roman numerals + proximity) ═══
+    const drawCard = (cx, cy, card, isHov, wobble, lanternX, lanternY) => {
+      const cw = Math.min(W*0.32, 155), ch = Math.round(cw*0.58)
+      const x0 = cx - cw/2, y0 = cy - ch/2 + wobble
+      const pulse = 0.5 + 0.5*Math.sin(t*1.7 + card.id.charCodeAt(0))
+
+      // Proximity brightness: cards closer to lantern glow brighter
+      const dx = cx - lanternX, dy = cy - wobble - lanternY
+      const dist = Math.sqrt(dx*dx + dy*dy)
+      const proxFactor = Math.max(0.3, 1 - dist / (Math.max(W,H) * 0.55))
+
+      // Card fill
+      ctx.fillStyle = isHov ? 'rgba(38,22,8,0.98)' : 'rgba(10,6,2,0.93)'
       ctx.fillRect(x0, y0, cw, ch)
 
-      // Outer border (Octopath golden frame)
-      ctx.strokeStyle = isHov
-        ? `rgba(240,208,100,${0.85+pulse*0.15})`
-        : 'rgba(200,168,75,0.38)'
-      ctx.lineWidth = isHov ? 1.4 : 0.8
+      // Outer border (brightness from proximity)
+      const bOp = isHov ? 0.88+pulse*0.12 : 0.28 + proxFactor * 0.38
+      ctx.strokeStyle = `rgba(230,195,80,${bOp})`
+      ctx.lineWidth = isHov ? 1.6 : 0.9
       ctx.strokeRect(x0+1.5, y0+1.5, cw-3, ch-3)
+
       // Inner inset border
-      ctx.strokeStyle = isHov ? 'rgba(200,168,75,0.28)' : 'rgba(200,168,75,0.10)'
-      ctx.lineWidth = 0.5
-      ctx.strokeRect(x0+4, y0+4, cw-8, ch-8)
+      ctx.strokeStyle = `rgba(200,168,75,${isHov ? 0.30 : 0.08+proxFactor*0.14})`
+      ctx.lineWidth = 0.6
+      ctx.strokeRect(x0+4.5, y0+4.5, cw-9, ch-9)
+
+      // Center divider line with diamond (Octopath signature)
+      const midX = x0 + cw/2
+      const divY = y0 + ch*0.58
+      ctx.strokeStyle = `rgba(200,168,75,${isHov ? 0.45 : 0.15+proxFactor*0.20})`
+      ctx.lineWidth = 0.6
+      ctx.beginPath(); ctx.moveTo(x0+8, divY); ctx.lineTo(x0+cw-8, divY); ctx.stroke()
+      // Center diamond on divider
+      ctx.fillStyle = `rgba(220,185,75,${isHov ? 0.85 : 0.35+proxFactor*0.35})`
+      ctx.save(); ctx.translate(midX, divY); ctx.rotate(Math.PI/4)
+      ctx.fillRect(-2.5,-2.5,5,5); ctx.restore()
 
       // Corner diamonds (classic Octopath window decoration)
-      ctx.fillStyle = isHov ? 'rgba(240,208,100,0.9)' : 'rgba(200,168,75,0.45)'
+      const dOp = isHov ? 0.92 : 0.35 + proxFactor * 0.42
+      ctx.fillStyle = `rgba(230,195,80,${dOp})`
       ;[[x0+2.5,y0+2.5],[x0+cw-2.5,y0+2.5],[x0+2.5,y0+ch-2.5],[x0+cw-2.5,y0+ch-2.5]].forEach(([bx,by]) => {
         ctx.save(); ctx.translate(bx,by); ctx.rotate(Math.PI/4)
-        ctx.fillRect(-2,-2,4,4); ctx.restore()
+        ctx.fillRect(-2.2,-2.2,4.4,4.4); ctx.restore()
       })
 
-      // Warm inner glow when hovered
+      // Hover lift inner glow
       if (isHov) {
-        const ig = ctx.createRadialGradient(cx, cy+wobble, 0, cx, cy+wobble, cw*0.65)
-        ig.addColorStop(0,  `rgba(180,120,30,${0.14+pulse*0.08})`)
+        const ig = ctx.createRadialGradient(cx, cy+wobble, 0, cx, cy+wobble, cw*0.68)
+        ig.addColorStop(0,  `rgba(190,130,35,${0.16+pulse*0.10})`)
         ig.addColorStop(1,  'transparent')
         ctx.fillStyle = ig; ctx.fillRect(x0, y0, cw, ch)
       }
 
-      // Icon (drawn at top-center of card)
-      const ix = cx, iy = y0+ch*0.36
-      ctx.strokeStyle = isHov ? 'rgba(240,208,100,0.85)' : 'rgba(200,168,75,0.45)'
-      ctx.fillStyle   = isHov ? 'rgba(240,208,100,0.18)' : 'rgba(200,168,75,0.07)'
-      ctx.lineWidth   = 0.9
+      // Roman numeral (top-left corner)
+      ctx.font = `bold ${Math.round(8+cw*0.04)}px "Cinzel", serif`
+      ctx.textAlign = 'left'
+      ctx.fillStyle = isHov ? 'rgba(255,230,120,0.75)' : `rgba(200,168,75,${0.25+proxFactor*0.35})`
+      ctx.fillText(card.roman, x0+8, y0+15)
+
+      // Icon (top-center, above divider)
+      const ix = cx, iy = y0 + ch*0.32
+      ctx.strokeStyle = isHov ? 'rgba(240,208,100,0.88)' : `rgba(200,168,75,${0.40+proxFactor*0.35})`
+      ctx.fillStyle   = isHov ? 'rgba(240,208,100,0.20)' : `rgba(200,168,75,${0.06+proxFactor*0.08})`
+      ctx.lineWidth   = 1.0
       if (card.id === 'profile') {
-        // Person silhouette
-        ctx.beginPath(); ctx.arc(ix, iy-4, 5, 0, Math.PI*2); ctx.fill(); ctx.stroke()
-        ctx.beginPath(); ctx.moveTo(ix-7,iy+9); ctx.quadraticCurveTo(ix,iy+3,ix+7,iy+9); ctx.stroke()
+        ctx.beginPath(); ctx.arc(ix, iy-4, 5.5, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(ix-8,iy+9); ctx.quadraticCurveTo(ix,iy+2,ix+8,iy+9); ctx.stroke()
       } else if (card.id === 'skills') {
-        // 8-pointed star / rune
-        for (let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(ix+Math.cos(a)*4,iy+Math.sin(a)*4);ctx.lineTo(ix+Math.cos(a)*11,iy+Math.sin(a)*11);ctx.stroke()}
-        ctx.beginPath();ctx.arc(ix,iy,4,0,Math.PI*2);ctx.fill();ctx.stroke()
+        for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(ix+Math.cos(a)*4.5,iy+Math.sin(a)*4.5);ctx.lineTo(ix+Math.cos(a)*12,iy+Math.sin(a)*12);ctx.stroke()}
+        ctx.beginPath();ctx.arc(ix,iy,4.5,0,Math.PI*2);ctx.fill();ctx.stroke()
       } else if (card.id === 'quests') {
-        // Compass rose
-        ctx.beginPath();ctx.arc(ix,iy,10,0,Math.PI*2);ctx.stroke()
-        ctx.beginPath();ctx.moveTo(ix,iy-10);ctx.lineTo(ix,iy+10);ctx.moveTo(ix-10,iy);ctx.lineTo(ix+10,iy);ctx.stroke()
-        ctx.fillStyle = isHov ? 'rgba(240,208,100,0.85)' : 'rgba(200,168,75,0.45)'
-        ctx.beginPath();ctx.moveTo(ix,iy-10);ctx.lineTo(ix-3,iy-3);ctx.lineTo(ix+3,iy-3);ctx.closePath();ctx.fill()
-        ctx.beginPath();ctx.arc(ix,iy,2.5,0,Math.PI*2);ctx.fill()
+        ctx.beginPath();ctx.arc(ix,iy,11,0,Math.PI*2);ctx.stroke()
+        ctx.beginPath();ctx.moveTo(ix,iy-11);ctx.lineTo(ix,iy+11);ctx.moveTo(ix-11,iy);ctx.lineTo(ix+11,iy);ctx.stroke()
+        ctx.fillStyle = isHov ? 'rgba(240,208,100,0.88)' : `rgba(200,168,75,${0.42+proxFactor*0.38})`
+        ctx.beginPath();ctx.moveTo(ix,iy-11);ctx.lineTo(ix-3.5,iy-3.5);ctx.lineTo(ix+3.5,iy-3.5);ctx.closePath();ctx.fill()
+        ctx.beginPath();ctx.arc(ix,iy,2.8,0,Math.PI*2);ctx.fill()
       } else {
-        // Signal arcs (contact/message)
-        ;[5,9,13].forEach(r=>{ctx.beginPath();ctx.arc(ix-2,iy+4,r,-Math.PI*0.75,-Math.PI*0.05);ctx.strokeStyle=isHov?`rgba(240,208,100,${0.9-r/18})`:`rgba(200,168,75,${0.5-r/30})`;ctx.stroke()})
-        ctx.fillStyle=isHov?'rgba(240,208,100,0.9)':'rgba(200,168,75,0.45)'
-        ctx.beginPath();ctx.arc(ix-2,iy+4,2.5,0,Math.PI*2);ctx.fill()
+        ;[5,9,13].forEach(r=>{
+          ctx.beginPath();ctx.arc(ix-2,iy+4,r,-Math.PI*0.75,-Math.PI*0.05)
+          ctx.strokeStyle=isHov?`rgba(240,208,100,${0.92-r/17})`:`rgba(200,168,75,${(0.42+proxFactor*0.35)-r/30})`
+          ctx.stroke()
+        })
+        ctx.fillStyle=isHov?'rgba(240,208,100,0.92)':`rgba(200,168,75,${0.42+proxFactor*0.38})`
+        ctx.beginPath();ctx.arc(ix-2,iy+4,2.8,0,Math.PI*2);ctx.fill()
       }
 
-      // Title (Cinzel, uppercase spaced)
-      ctx.font = `bold 9.5px "Cinzel", serif`
+      // Title label (below divider)
+      ctx.font = `bold ${Math.round(8.5+cw*0.028)}px "Cinzel", serif`
       ctx.textAlign = 'center'
-      ctx.fillStyle = isHov ? '#F0D070' : 'rgba(200,168,75,0.72)'
+      ctx.fillStyle = isHov ? '#F0D070' : `rgba(210,178,80,${0.55+proxFactor*0.35})`
       ctx.shadowColor = isHov ? '#F0D070' : 'transparent'
-      ctx.shadowBlur  = isHov ? 10 : 0
-      ctx.fillText(card.label, cx, y0+ch*0.73)
+      ctx.shadowBlur  = isHov ? 12 : 0
+      ctx.fillText(card.label, cx, y0+ch*0.76)
       ctx.shadowBlur = 0
-      // Sub-label (VT323, small)
-      ctx.font = '12px "VT323", monospace'
-      ctx.fillStyle = isHov ? 'rgba(240,208,112,0.55)' : 'rgba(200,168,75,0.28)'
-      ctx.fillText(card.sub, cx, y0+ch*0.89)
+
+      // Sub-label
+      ctx.font = `${Math.round(10+cw*0.02)}px "VT323", monospace`
+      ctx.fillStyle = isHov ? 'rgba(240,208,112,0.58)' : `rgba(200,168,75,${0.20+proxFactor*0.22})`
+      ctx.fillText(card.sub, cx, y0+ch*0.91)
     }
 
-    // ── Main frame loop ──
+    // ═══ DRAW: Film grain overlay ═══
+    const drawGrain = () => {
+      grainTick.current++
+      if (grainTick.current % 6 === 0) buildGrain()
+      if (!grainRef.current) return
+      ctx.save()
+      ctx.globalAlpha = 0.022
+      ctx.globalCompositeOperation = 'overlay'
+      // Tile grain canvas across full canvas (it's 256×256)
+      for (let gx = 0; gx < W; gx += 256) {
+        for (let gy = 0; gy < H; gy += 256) {
+          ctx.drawImage(grainRef.current, gx, gy)
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
+      ctx.restore()
+    }
+
+    // ═══ MAIN FRAME LOOP ═══
     const frame = () => {
       t += 0.016
       ctx.clearRect(0, 0, W, H)
-      const lx = W/2, ly = H/2
 
-      // Flicker values (layered sine noise)
-      const fx = Math.sin(t*3.8)*2.8 + Math.sin(t*6.4)*1.1 + Math.sin(t*11.2)*0.5
-      const fs = 0.91 + 0.05*Math.sin(t*4.1) + 0.04*Math.sin(t*9.7)
+      const mx = mouseRef.current.x
+      const my = mouseRef.current.y
 
-      // 1. Background
-      drawBg()
+      // Lantern position (center-right area, shifts slightly with mouse)
+      const lx = W * 0.5 + (mx - 0.5) * -25
+      const ly = H * 0.42 + (my - 0.5) * -18
 
-      // 2. Bokeh (back layer — below everything)
-      bokeh.forEach(p => {
-        p.y -= p.vy; p.x += p.vx + Math.sin(t*0.25+p.ph)*0.04
-        if (p.y+p.r < 0) { p.y = H+p.r; p.x = Math.random()*W }
-        const op = p.op*(0.75+0.25*Math.sin(t*0.6+p.ph))
+      // Flame flicker (4-frequency noise)
+      const fx = Math.sin(t*4.1)*2.5 + Math.sin(t*6.8)*1.2 + Math.sin(t*11.5)*0.6 + Math.sin(t*17.3)*0.3
+      const fs = 0.90 + 0.055*Math.sin(t*4.3) + 0.038*Math.sin(t*9.8) + 0.012*Math.sin(t*19.1)
+
+      // ── Layer 1: Background (far silhouettes + vignette) ──
+      drawBg(mx, my)
+
+      // ── Layer 2: Far bokeh (slowest, largest, faintest) ──
+      const farParX = (mx - 0.5) * -40
+      const farParY = (my - 0.5) * -20
+      farBokeh.forEach(p => {
+        p.y -= p.vy; p.x += p.vx + Math.sin(t*0.15+p.ph)*0.02
+        if (p.y + p.r < 0) { p.y = H + p.r; p.x = Math.random()*W }
+        const op = p.op * (0.7 + 0.3*Math.sin(t*0.4+p.ph))
         ctx.globalAlpha = op
         ctx.fillStyle = p.col
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill()
-        // Soft halo for larger bokeh (simulates lens blur)
+        ctx.beginPath(); ctx.arc(p.x + farParX, p.y + farParY, p.r, 0, Math.PI*2); ctx.fill()
+        ctx.globalAlpha = op * 0.06
+        ctx.beginPath(); ctx.arc(p.x + farParX, p.y + farParY, p.r * 2.8, 0, Math.PI*2); ctx.fill()
+        ctx.globalAlpha = 1
+      })
+
+      // ── Layer 3: God rays (behind lantern) ──
+      drawGodRays(lx, ly, t)
+
+      // ── Layer 4: Mid bokeh particles ──
+      const midParX = (mx - 0.5) * -50
+      const midParY = (my - 0.5) * -28
+      bokeh.forEach(p => {
+        p.y -= p.vy; p.x += p.vx + Math.sin(t*0.22+p.ph)*0.035
+        if (p.y + p.r < 0) { p.y = H + p.r; p.x = Math.random()*W }
+        const op = p.op*(0.72+0.28*Math.sin(t*0.55+p.ph))
+        ctx.globalAlpha = op
+        ctx.fillStyle = p.col
+        ctx.beginPath(); ctx.arc(p.x + midParX, p.y + midParY, p.r, 0, Math.PI*2); ctx.fill()
         if (p.r > 4) {
-          ctx.globalAlpha = op*0.12
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r*2.2, 0, Math.PI*2); ctx.fill()
+          ctx.globalAlpha = op * 0.10
+          ctx.beginPath(); ctx.arc(p.x + midParX, p.y + midParY, p.r*2.4, 0, Math.PI*2); ctx.fill()
         }
         ctx.globalAlpha = 1
       })
 
-      // 3. Compute card positions + hit areas
+      // ── Layer 5: Cobblestone ground ──
+      drawGround(lx, ly, fs)
+
+      // ── Layer 6: Compute card hit areas + positions ──
       const newHit = {}
-      const cards = CARDS.map((c,i) => {
-        const wb = Math.sin(t*1.3+i*1.1)*4
-        const cx_ = W/2+c.ix*W, cy_ = H/2+c.iy*H
-        const cw = Math.min(W*0.34,148), ch = Math.round(cw*0.60)
+      const cards = CARDS.map((c, i) => {
+        const wb = Math.sin(t * 1.25 + i * 1.15) * 5
+        const cx_ = W/2 + c.ix*W, cy_ = H/2 + c.iy*H
+        const cw = Math.min(W*0.32, 155), ch = Math.round(cw*0.58)
         newHit[c.id] = { x:cx_, y:cy_+wb, w:cw, h:ch }
-        return {...c, cx:cx_, cy:cy_, wb}
+        return { ...c, cx:cx_, cy:cy_, wb }
       })
       hitRef.current = newHit
 
-      // 4. Subtle warm threads from lantern to each card
+      // ── Layer 7: Warm light threads (lantern → cards) ──
       cards.forEach(c => {
         const isHov = hovRef.current === c.id
-        const tg = ctx.createLinearGradient(lx, ly, c.cx, c.cy+c.wb)
-        tg.addColorStop(0, `rgba(200,168,75,${isHov?0.22:0.06})`)
-        tg.addColorStop(1, `rgba(200,168,75,0)`)
-        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(c.cx, c.cy+c.wb)
-        ctx.strokeStyle = tg; ctx.lineWidth = isHov ? 0.8 : 0.35; ctx.stroke()
+        const tg = ctx.createLinearGradient(lx, ly, c.cx, c.cy + c.wb)
+        tg.addColorStop(0, `rgba(200,168,75,${isHov ? 0.26 : 0.07})`)
+        tg.addColorStop(1, 'rgba(200,168,75,0)')
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(c.cx, c.cy + c.wb)
+        ctx.strokeStyle = tg; ctx.lineWidth = isHov ? 0.9 : 0.38; ctx.stroke()
       })
 
-      // 5. Lantern glow
+      // ── Layer 8: Lantern ambient glow ──
       drawGlow(lx, ly, fs)
 
-      // 6. Firefly motes
-      motes.forEach(m => {
-        m.ang += m.spd
-        const mx = lx+Math.cos(m.ang)*m.rad + Math.sin(t*0.45+m.ph)*14
-        const my = ly+Math.sin(m.ang)*m.rad*0.65 + Math.cos(t*0.35+m.ph)*10
-        const op = Math.max(0, 0.28+0.55*Math.sin(t*2.8+m.ph))
+      // ── Layer 9: Ember particles (rise from flame) ──
+      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
+      const flameBase = ly + 2*SCALE
+      embers.forEach(e => {
+        e.life += 0.008 + Math.random()*0.004
+        if (e.life > e.maxLife) {
+          e.life = 0; e.maxLife = 0.7+Math.random()*1.2
+          e.x = lx + (Math.random()-0.5)*10*SCALE
+          e.y = flameBase
+          e.vx = (Math.random()-0.5)*0.55
+          e.vy = -(0.45+Math.random()*0.9)
+          e.sz = 0.7+Math.random()*1.3
+        }
+        e.x += e.vx + Math.sin(t*2.8+e.ph)*0.22
+        e.y += e.vy
+        e.vx *= 0.985
+        const lifeFrac = e.life / e.maxLife
+        const op = Math.max(0, Math.sin(lifeFrac * Math.PI)) * 0.75
         ctx.globalAlpha = op
-        ctx.fillStyle = '#FFFCE0'
-        ctx.beginPath(); ctx.arc(mx, my, m.sz, 0, Math.PI*2); ctx.fill()
-        ctx.globalAlpha = op*0.25
-        ctx.fillStyle = '#F0D070'
-        ctx.beginPath(); ctx.arc(mx, my, m.sz*3, 0, Math.PI*2); ctx.fill()
+        ctx.fillStyle = lifeFrac < 0.5 ? '#FFE090' : '#FF8822'
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.sz * (1 - lifeFrac * 0.4), 0, Math.PI*2); ctx.fill()
         ctx.globalAlpha = 1
       })
 
-      // 7. Cards (drawn below frame/flame)
-      cards.forEach(c => drawCard(c.cx, c.cy, c, hovRef.current===c.id, c.wb))
+      // ── Layer 10: Firefly motes ──
+      motes.forEach(m => {
+        m.ang += m.spd
+        const mx2 = lx + Math.cos(m.ang)*m.rad + Math.sin(t*0.42+m.ph)*16
+        const my2 = ly + Math.sin(m.ang)*m.rad*0.62 + Math.cos(t*0.33+m.ph)*11
+        const op = Math.max(0, 0.22 + 0.60*Math.sin(t*2.6+m.ph))
+        ctx.globalAlpha = op
+        ctx.fillStyle = '#FFFCE0'
+        ctx.beginPath(); ctx.arc(mx2, my2, m.sz, 0, Math.PI*2); ctx.fill()
+        ctx.globalAlpha = op * 0.22
+        ctx.fillStyle = '#F0D070'
+        ctx.beginPath(); ctx.arc(mx2, my2, m.sz*3.5, 0, Math.PI*2); ctx.fill()
+        ctx.globalAlpha = 1
+      })
 
-      // 8. Lantern frame + flame (on top)
-      drawFrame(lx, ly)
+      // ── Layer 11: Chapter cards ──
+      cards.forEach(c => drawCard(c.cx, c.cy, c, hovRef.current === c.id, c.wb, lx, ly))
+
+      // ── Layer 12: Detailed lantern frame ──
+      drawLantern(lx, ly)
+
+      // ── Layer 13: Animated flame ──
       drawFlame(lx, ly, fx, fs)
+
+      // ── Layer 14: Pixel-art character silhouette ──
+      drawCharacter(lx, ly, t)
+
+      // ── Layer 15: Film grain (topmost) ──
+      drawGrain()
 
       rafRef.current = requestAnimationFrame(frame)
     }
     rafRef.current = requestAnimationFrame(frame)
 
-    // Mouse events
+    // ── Mouse tracking ──
     const onMove = e => {
       const r = canvas.getBoundingClientRect()
-      const mx = e.clientX-r.left, my = e.clientY-r.top
+      const rawX = (e.clientX - r.left) / r.width
+      const rawY = (e.clientY - r.top) / r.height
+      mouseRef.current = { x: Math.max(0,Math.min(1,rawX)), y: Math.max(0,Math.min(1,rawY)) }
+
+      const mx = e.clientX - r.left, my = e.clientY - r.top
       let found = null
       Object.entries(hitRef.current).forEach(([id,a]) => {
-        if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) found=id
+        if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) found = id
       })
-      if (found !== hovRef.current) { hovRef.current=found; onHover?.(found) }
+      if (found !== hovRef.current) { hovRef.current = found; onHover?.(found) }
     }
     const onClick = e => {
       const r = canvas.getBoundingClientRect()
-      const mx = e.clientX-r.left, my = e.clientY-r.top
+      const mx = e.clientX - r.left, my = e.clientY - r.top
       Object.entries(hitRef.current).forEach(([id,a]) => {
         if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) onNavigate?.(id)
       })
     }
+
     canvas.addEventListener('mousemove', onMove)
     canvas.addEventListener('click', onClick)
     const ro = new ResizeObserver(resize); ro.observe(canvas)
@@ -977,7 +1521,12 @@ function LanternScene({ onNavigate, onHover }) {
     }
   }, [onNavigate, onHover])
 
-  return <canvas ref={canvasRef} style={{ width:'100%', height:'100%', display:'block' }} />
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ width:'100%', height:'100%', display:'block', cursor:'crosshair' }}
+    />
+  )
 }
 
 // ── Dead code boundary — StainedGlassWindow body below (not rendered, kept for badge SVG ref) ──
