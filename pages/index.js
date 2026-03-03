@@ -647,13 +647,360 @@ const GLASS_CFG = {
   contact: { col: '#7060C0', glow: '#A090F0', cx: 197, cy: 285 },
 }
 
-function StainedGlassWindow({ hoveredSection }) {
+// ═══════════════════════════════════════════════════════════════
+//  LANTERN SCENE — Octopath Traveler II aesthetic
+//  Single warm lantern in deep darkness · floating chapter cards
+//  bokeh depth-of-field particles · firefly motes · fade-to-black nav
+// ═══════════════════════════════════════════════════════════════
+function LanternScene({ onNavigate, onHover }) {
+  const canvasRef = useRef(null)
+  const rafRef    = useRef(null)
+  const hovRef    = useRef(null)
+  const hitRef    = useRef({})
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx    = canvas.getContext('2d')
+    let W = 0, H = 0, t = 0
+
+    // Bokeh particles (depth-of-field atmosphere)
+    const bokeh = []
+    // Firefly motes near lantern
+    const motes = []
+
+    const CARDS = [
+      { id: 'profile', label: 'PROFILE',   sub: 'Character · Story',   ix: -0.25, iy: -0.22 },
+      { id: 'skills',  label: 'ABILITIES', sub: 'Skills · Mastery',     ix:  0.25, iy: -0.22 },
+      { id: 'quests',  label: 'QUEST LOG', sub: 'Projects · Archive',   ix: -0.25, iy:  0.22 },
+      { id: 'contact', label: 'MESSAGE',   sub: 'Send · Connect',        ix:  0.25, iy:  0.22 },
+    ]
+
+    const resize = () => {
+      const pr = Math.min(window.devicePixelRatio || 1, 2)
+      W = canvas.offsetWidth; H = canvas.offsetHeight
+      canvas.width = W * pr; canvas.height = H * pr
+      ctx.setTransform(pr, 0, 0, pr, 0, 0)
+      if (bokeh.length === 0) {
+        for (let i = 0; i < 80; i++) bokeh.push({
+          x: Math.random() * W, y: Math.random() * H,
+          r: 1.2 + Math.random() * 10,
+          op: 0.04 + Math.random() * 0.22,
+          vy: 0.04 + Math.random() * 0.16,
+          vx: (Math.random() - 0.5) * 0.06,
+          ph: Math.random() * Math.PI * 2,
+          col: ['#F0D070','#C8A84B','#FFE8B0','#E8C87A','#FFF4D0'][Math.floor(Math.random()*5)],
+        })
+        for (let i = 0; i < 20; i++) motes.push({
+          ang: Math.random() * Math.PI * 2,
+          rad: 18 + Math.random() * 55,
+          spd: (Math.random() - 0.5) * 0.006,
+          ph:  Math.random() * Math.PI * 2,
+          sz:  0.7 + Math.random() * 1.4,
+        })
+      }
+    }
+    resize()
+
+    // ── Warm atmospheric background (Octopath deep darkness) ──
+    const drawBg = () => {
+      ctx.fillStyle = '#06040A'
+      ctx.fillRect(0, 0, W, H)
+      const vg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.75)
+      vg.addColorStop(0,   'rgba(30,16,4,0.0)')
+      vg.addColorStop(0.5, 'rgba(8,4,1,0.4)')
+      vg.addColorStop(1,   'rgba(0,0,0,0.9)')
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H)
+    }
+
+    // ── Lantern ambient glow ──
+    const drawGlow = (lx, ly, fs) => {
+      // Far outer warmth
+      const og = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.min(W,H)*0.55*fs)
+      og.addColorStop(0,   `rgba(180,110,30,${0.18*fs})`)
+      og.addColorStop(0.4, `rgba(120,65,10,${0.09*fs})`)
+      og.addColorStop(1,   'transparent')
+      ctx.fillStyle = og
+      ctx.beginPath(); ctx.ellipse(lx, ly, Math.min(W,H)*0.55*fs, Math.min(W,H)*0.65*fs, 0, 0, Math.PI*2); ctx.fill()
+      // Inner bright bloom
+      const ig = ctx.createRadialGradient(lx, ly, 0, lx, ly, 90*fs)
+      ig.addColorStop(0,   `rgba(255,240,180,${0.60*fs})`)
+      ig.addColorStop(0.25,`rgba(240,180,60,${0.30*fs})`)
+      ig.addColorStop(0.7, `rgba(180,100,20,${0.10*fs})`)
+      ig.addColorStop(1,   'transparent')
+      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(lx, ly, 90*fs, 0, Math.PI*2); ctx.fill()
+    }
+
+    // ── Wrought-iron lantern frame ──
+    const drawFrame = (lx, ly) => {
+      const fw = 20, fh = 34, hk = 18
+      ctx.lineWidth = 1.1
+      // Hook chain
+      ctx.setLineDash([2,3])
+      ctx.strokeStyle = 'rgba(180,140,55,0.5)'
+      ctx.beginPath(); ctx.moveTo(lx, ly-fh-hk); ctx.lineTo(lx, ly-fh); ctx.stroke()
+      ctx.setLineDash([])
+      // Top cap
+      ctx.strokeStyle = 'rgba(200,160,60,0.75)'
+      ctx.beginPath()
+      ctx.moveTo(lx-fw*0.8, ly-fh)
+      ctx.lineTo(lx-fw*0.4, ly-fh-6)
+      ctx.lineTo(lx, ly-fh-9)
+      ctx.lineTo(lx+fw*0.4, ly-fh-6)
+      ctx.lineTo(lx+fw*0.8, ly-fh); ctx.stroke()
+      // Bottom cap
+      ctx.beginPath(); ctx.moveTo(lx-fw*0.6, ly+fh); ctx.lineTo(lx, ly+fh+5); ctx.lineTo(lx+fw*0.6, ly+fh); ctx.stroke()
+      // Side bars (2 per side)
+      ctx.strokeStyle = 'rgba(180,140,55,0.5)'
+      ctx.lineWidth = 0.7
+      ;[-fw, -fw*0.35, fw*0.35, fw].forEach(ox => {
+        ctx.beginPath(); ctx.moveTo(lx+ox, ly-fh); ctx.lineTo(lx+ox, ly+fh); ctx.stroke()
+      })
+      // Horizontal cross-bars
+      ;[-fh*0.4, 0, fh*0.4].forEach(oy => {
+        ctx.beginPath(); ctx.moveTo(lx-fw, ly+oy); ctx.lineTo(lx+fw, ly+oy); ctx.stroke()
+      })
+      // Corner rivets
+      ctx.fillStyle = 'rgba(200,160,60,0.6)'
+      ;[[-fw,ly-fh],[fw,ly-fh],[-fw,ly+fh],[fw,ly+fh]].forEach(([rx,ry]) => {
+        ctx.beginPath(); ctx.arc(lx+rx, ry, 2, 0, Math.PI*2); ctx.fill()
+      })
+    }
+
+    // ── Flame (teardrop with flicker) ──
+    const drawFlame = (lx, ly, fx, fs) => {
+      const fh = 24*fs, fw = 9*fs, tx = lx + fx*0.6
+      // Outer flame
+      ctx.beginPath()
+      ctx.moveTo(lx, ly+fh*0.45)
+      ctx.bezierCurveTo(lx-fw, ly, lx-fw*0.9, ly-fh*0.35, tx-fw*0.3, ly-fh)
+      ctx.bezierCurveTo(tx, ly-fh*1.25, tx+fw*0.3, ly-fh*0.75, lx+fw, ly)
+      ctx.bezierCurveTo(lx+fw, ly+fh*0.28, lx+fw*0.4, ly+fh*0.45, lx, ly+fh*0.45)
+      const fg = ctx.createLinearGradient(lx, ly+fh*0.45, lx, ly-fh*1.25)
+      fg.addColorStop(0,   `rgba(180,80,10,${0.95*fs})`)
+      fg.addColorStop(0.4, `rgba(255,170,30,${0.98*fs})`)
+      fg.addColorStop(1,   `rgba(255,255,180,${0.7*fs})`)
+      ctx.fillStyle = fg; ctx.fill()
+      // Inner white core
+      ctx.beginPath()
+      ctx.moveTo(lx, ly+fh*0.28)
+      ctx.bezierCurveTo(lx-fw*0.38, ly, lx-fw*0.28, ly-fh*0.28, tx-fw*0.1, ly-fh*0.82)
+      ctx.bezierCurveTo(tx, ly-fh, tx+fw*0.1, ly-fh*0.55, lx+fw*0.38, ly)
+      ctx.bezierCurveTo(lx+fw*0.38, ly+fh*0.18, lx+fw*0.2, ly+fh*0.28, lx, ly+fh*0.28)
+      const cg = ctx.createLinearGradient(lx, ly+fh*0.28, lx, ly-fh)
+      cg.addColorStop(0,   `rgba(255,200,60,${0.95*fs})`)
+      cg.addColorStop(0.5, `rgba(255,245,160,${0.98*fs})`)
+      cg.addColorStop(1,   `rgba(255,255,255,${0.9*fs})`)
+      ctx.fillStyle = cg; ctx.fill()
+    }
+
+    // ── Octopath chapter card ──
+    const drawCard = (cx, cy, card, isHov, wobble) => {
+      const cw = Math.min(W*0.34, 148), ch = Math.round(cw*0.60)
+      const x0 = cx-cw/2, y0 = cy-ch/2+wobble
+      const pulse = 0.5+0.5*Math.sin(t*1.7+card.id.charCodeAt(0))
+
+      // Card fill — very dark warm brown
+      ctx.fillStyle = isHov ? 'rgba(32,20,8,0.97)' : 'rgba(12,7,3,0.92)'
+      ctx.fillRect(x0, y0, cw, ch)
+
+      // Outer border (Octopath golden frame)
+      ctx.strokeStyle = isHov
+        ? `rgba(240,208,100,${0.85+pulse*0.15})`
+        : 'rgba(200,168,75,0.38)'
+      ctx.lineWidth = isHov ? 1.4 : 0.8
+      ctx.strokeRect(x0+1.5, y0+1.5, cw-3, ch-3)
+      // Inner inset border
+      ctx.strokeStyle = isHov ? 'rgba(200,168,75,0.28)' : 'rgba(200,168,75,0.10)'
+      ctx.lineWidth = 0.5
+      ctx.strokeRect(x0+4, y0+4, cw-8, ch-8)
+
+      // Corner diamonds (classic Octopath window decoration)
+      ctx.fillStyle = isHov ? 'rgba(240,208,100,0.9)' : 'rgba(200,168,75,0.45)'
+      ;[[x0+2.5,y0+2.5],[x0+cw-2.5,y0+2.5],[x0+2.5,y0+ch-2.5],[x0+cw-2.5,y0+ch-2.5]].forEach(([bx,by]) => {
+        ctx.save(); ctx.translate(bx,by); ctx.rotate(Math.PI/4)
+        ctx.fillRect(-2,-2,4,4); ctx.restore()
+      })
+
+      // Warm inner glow when hovered
+      if (isHov) {
+        const ig = ctx.createRadialGradient(cx, cy+wobble, 0, cx, cy+wobble, cw*0.65)
+        ig.addColorStop(0,  `rgba(180,120,30,${0.14+pulse*0.08})`)
+        ig.addColorStop(1,  'transparent')
+        ctx.fillStyle = ig; ctx.fillRect(x0, y0, cw, ch)
+      }
+
+      // Icon (drawn at top-center of card)
+      const ix = cx, iy = y0+ch*0.36
+      ctx.strokeStyle = isHov ? 'rgba(240,208,100,0.85)' : 'rgba(200,168,75,0.45)'
+      ctx.fillStyle   = isHov ? 'rgba(240,208,100,0.18)' : 'rgba(200,168,75,0.07)'
+      ctx.lineWidth   = 0.9
+      if (card.id === 'profile') {
+        // Person silhouette
+        ctx.beginPath(); ctx.arc(ix, iy-4, 5, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(ix-7,iy+9); ctx.quadraticCurveTo(ix,iy+3,ix+7,iy+9); ctx.stroke()
+      } else if (card.id === 'skills') {
+        // 8-pointed star / rune
+        for (let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(ix+Math.cos(a)*4,iy+Math.sin(a)*4);ctx.lineTo(ix+Math.cos(a)*11,iy+Math.sin(a)*11);ctx.stroke()}
+        ctx.beginPath();ctx.arc(ix,iy,4,0,Math.PI*2);ctx.fill();ctx.stroke()
+      } else if (card.id === 'quests') {
+        // Compass rose
+        ctx.beginPath();ctx.arc(ix,iy,10,0,Math.PI*2);ctx.stroke()
+        ctx.beginPath();ctx.moveTo(ix,iy-10);ctx.lineTo(ix,iy+10);ctx.moveTo(ix-10,iy);ctx.lineTo(ix+10,iy);ctx.stroke()
+        ctx.fillStyle = isHov ? 'rgba(240,208,100,0.85)' : 'rgba(200,168,75,0.45)'
+        ctx.beginPath();ctx.moveTo(ix,iy-10);ctx.lineTo(ix-3,iy-3);ctx.lineTo(ix+3,iy-3);ctx.closePath();ctx.fill()
+        ctx.beginPath();ctx.arc(ix,iy,2.5,0,Math.PI*2);ctx.fill()
+      } else {
+        // Signal arcs (contact/message)
+        ;[5,9,13].forEach(r=>{ctx.beginPath();ctx.arc(ix-2,iy+4,r,-Math.PI*0.75,-Math.PI*0.05);ctx.strokeStyle=isHov?`rgba(240,208,100,${0.9-r/18})`:`rgba(200,168,75,${0.5-r/30})`;ctx.stroke()})
+        ctx.fillStyle=isHov?'rgba(240,208,100,0.9)':'rgba(200,168,75,0.45)'
+        ctx.beginPath();ctx.arc(ix-2,iy+4,2.5,0,Math.PI*2);ctx.fill()
+      }
+
+      // Title (Cinzel, uppercase spaced)
+      ctx.font = `bold 9.5px "Cinzel", serif`
+      ctx.textAlign = 'center'
+      ctx.fillStyle = isHov ? '#F0D070' : 'rgba(200,168,75,0.72)'
+      ctx.shadowColor = isHov ? '#F0D070' : 'transparent'
+      ctx.shadowBlur  = isHov ? 10 : 0
+      ctx.fillText(card.label, cx, y0+ch*0.73)
+      ctx.shadowBlur = 0
+      // Sub-label (VT323, small)
+      ctx.font = '12px "VT323", monospace'
+      ctx.fillStyle = isHov ? 'rgba(240,208,112,0.55)' : 'rgba(200,168,75,0.28)'
+      ctx.fillText(card.sub, cx, y0+ch*0.89)
+    }
+
+    // ── Main frame loop ──
+    const frame = () => {
+      t += 0.016
+      ctx.clearRect(0, 0, W, H)
+      const lx = W/2, ly = H/2
+
+      // Flicker values (layered sine noise)
+      const fx = Math.sin(t*3.8)*2.8 + Math.sin(t*6.4)*1.1 + Math.sin(t*11.2)*0.5
+      const fs = 0.91 + 0.05*Math.sin(t*4.1) + 0.04*Math.sin(t*9.7)
+
+      // 1. Background
+      drawBg()
+
+      // 2. Bokeh (back layer — below everything)
+      bokeh.forEach(p => {
+        p.y -= p.vy; p.x += p.vx + Math.sin(t*0.25+p.ph)*0.04
+        if (p.y+p.r < 0) { p.y = H+p.r; p.x = Math.random()*W }
+        const op = p.op*(0.75+0.25*Math.sin(t*0.6+p.ph))
+        ctx.globalAlpha = op
+        ctx.fillStyle = p.col
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill()
+        // Soft halo for larger bokeh (simulates lens blur)
+        if (p.r > 4) {
+          ctx.globalAlpha = op*0.12
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r*2.2, 0, Math.PI*2); ctx.fill()
+        }
+        ctx.globalAlpha = 1
+      })
+
+      // 3. Compute card positions + hit areas
+      const newHit = {}
+      const cards = CARDS.map((c,i) => {
+        const wb = Math.sin(t*1.3+i*1.1)*4
+        const cx_ = W/2+c.ix*W, cy_ = H/2+c.iy*H
+        const cw = Math.min(W*0.34,148), ch = Math.round(cw*0.60)
+        newHit[c.id] = { x:cx_, y:cy_+wb, w:cw, h:ch }
+        return {...c, cx:cx_, cy:cy_, wb}
+      })
+      hitRef.current = newHit
+
+      // 4. Subtle warm threads from lantern to each card
+      cards.forEach(c => {
+        const isHov = hovRef.current === c.id
+        const tg = ctx.createLinearGradient(lx, ly, c.cx, c.cy+c.wb)
+        tg.addColorStop(0, `rgba(200,168,75,${isHov?0.22:0.06})`)
+        tg.addColorStop(1, `rgba(200,168,75,0)`)
+        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(c.cx, c.cy+c.wb)
+        ctx.strokeStyle = tg; ctx.lineWidth = isHov ? 0.8 : 0.35; ctx.stroke()
+      })
+
+      // 5. Lantern glow
+      drawGlow(lx, ly, fs)
+
+      // 6. Firefly motes
+      motes.forEach(m => {
+        m.ang += m.spd
+        const mx = lx+Math.cos(m.ang)*m.rad + Math.sin(t*0.45+m.ph)*14
+        const my = ly+Math.sin(m.ang)*m.rad*0.65 + Math.cos(t*0.35+m.ph)*10
+        const op = Math.max(0, 0.28+0.55*Math.sin(t*2.8+m.ph))
+        ctx.globalAlpha = op
+        ctx.fillStyle = '#FFFCE0'
+        ctx.beginPath(); ctx.arc(mx, my, m.sz, 0, Math.PI*2); ctx.fill()
+        ctx.globalAlpha = op*0.25
+        ctx.fillStyle = '#F0D070'
+        ctx.beginPath(); ctx.arc(mx, my, m.sz*3, 0, Math.PI*2); ctx.fill()
+        ctx.globalAlpha = 1
+      })
+
+      // 7. Cards (drawn below frame/flame)
+      cards.forEach(c => drawCard(c.cx, c.cy, c, hovRef.current===c.id, c.wb))
+
+      // 8. Lantern frame + flame (on top)
+      drawFrame(lx, ly)
+      drawFlame(lx, ly, fx, fs)
+
+      rafRef.current = requestAnimationFrame(frame)
+    }
+    rafRef.current = requestAnimationFrame(frame)
+
+    // Mouse events
+    const onMove = e => {
+      const r = canvas.getBoundingClientRect()
+      const mx = e.clientX-r.left, my = e.clientY-r.top
+      let found = null
+      Object.entries(hitRef.current).forEach(([id,a]) => {
+        if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) found=id
+      })
+      if (found !== hovRef.current) { hovRef.current=found; onHover?.(found) }
+    }
+    const onClick = e => {
+      const r = canvas.getBoundingClientRect()
+      const mx = e.clientX-r.left, my = e.clientY-r.top
+      Object.entries(hitRef.current).forEach(([id,a]) => {
+        if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) onNavigate?.(id)
+      })
+    }
+    canvas.addEventListener('mousemove', onMove)
+    canvas.addEventListener('click', onClick)
+    const ro = new ResizeObserver(resize); ro.observe(canvas)
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      canvas.removeEventListener('mousemove', onMove)
+      canvas.removeEventListener('click', onClick)
+      ro.disconnect()
+    }
+  }, [onNavigate, onHover])
+
+  return <canvas ref={canvasRef} style={{ width:'100%', height:'100%', display:'block' }} />
+}
+
+// ── Dead code boundary — StainedGlassWindow body below (not rendered, kept for badge SVG ref) ──
+function StainedGlassWindow({ hoveredSection, onNavigate, onHover }) {
   const lead = 'rgba(4,4,15,0.92)'
   const lw   = 7
   const hov  = hoveredSection
+  const [flashId, setFlashId] = useState(null)
+  const [rippleKey, setRippleKey] = useState(0)
 
-  // Panel fills (top panels are arch-clipped via clipPath; bottom panels are rects)
-  const panelFill = (id, base) => hov === id ? `${base}55` : `${base}22`
+  const handleClick = useCallback((id) => {
+    if (flashId) return
+    setFlashId(id)
+    setRippleKey(k => k + 1)
+    onNavigate?.(id)
+    setTimeout(() => setFlashId(null), 1000)
+  }, [flashId, onNavigate])
+
+  const panelFill = (id, base) => {
+    if (flashId === id) return `${base}CC`
+    if (hov === id) return `${base}55`
+    return `${base}22`
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: 300, margin: '0 auto' }}>
@@ -790,6 +1137,50 @@ function StainedGlassWindow({ hoveredSection }) {
             {p.label}
           </text>
         ))}
+
+        {/* ── CLICK RIPPLE — expanding light ring on click ── */}
+        {flashId && GLASS_CFG[flashId] && (
+          <motion.circle
+            key={rippleKey}
+            cx={GLASS_CFG[flashId].cx}
+            cy={GLASS_CFG[flashId].cy}
+            fill="none"
+            stroke={GLASS_CFG[flashId].glow}
+            initial={{ r: 0, opacity: 0.9, strokeWidth: 4 }}
+            animate={{ r: 180, opacity: 0, strokeWidth: 0.5 }}
+            transition={{ duration: 0.75, ease: 'easeOut' }}
+          />
+        )}
+
+        {/* ── CLICK TARGETS — transparent hit areas on top ── */}
+        <g clipPath="url(#sgClipTL)">
+          <path d="M 26,202 C 26,102 140,26 140,26 L 140,202 Z"
+            fill="transparent"
+            onClick={() => handleClick('profile')}
+            onMouseEnter={() => onHover?.('profile')}
+            onMouseLeave={() => onHover?.(null)}
+            style={{ cursor: 'none' }} />
+        </g>
+        <g clipPath="url(#sgClipTR)">
+          <path d="M 140,26 C 140,26 254,102 254,202 L 140,202 Z"
+            fill="transparent"
+            onClick={() => handleClick('skills')}
+            onMouseEnter={() => onHover?.('skills')}
+            onMouseLeave={() => onHover?.(null)}
+            style={{ cursor: 'none' }} />
+        </g>
+        <rect x={30} y={205} width={107} height={162}
+          fill="transparent"
+          onClick={() => handleClick('quests')}
+          onMouseEnter={() => onHover?.('quests')}
+          onMouseLeave={() => onHover?.(null)}
+          style={{ cursor: 'none' }} />
+        <rect x={143} y={205} width={107} height={162}
+          fill="transparent"
+          onClick={() => handleClick('contact')}
+          onMouseEnter={() => onHover?.('contact')}
+          onMouseLeave={() => onHover?.(null)}
+          style={{ cursor: 'none' }} />
       </svg>
       {/* Glass surface sheen */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 38% 28%, rgba(255,255,255,0.05), transparent 55%)', pointerEvents: 'none' }} />
@@ -841,7 +1232,7 @@ function StainedGlassBadge({ sectionId }) {
 //  MAIN LANDING PAGE
 //  Full screen · Left-aligned · Animation heavy · No top nav
 // ═══════════════════════════════════════════════════════════════
-function MainPage({ onNavigate }) {
+function MainPage({ onNavigate, onGlassNav }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [hoveredSection, setHoveredSection] = useState(null)
   const typed = useTypewriter(['Backend Engineer (leveling up)', 'Clinical Systems Specialist', 'Application Support Engineer', 'Business Analyst', 'Problem Solver'])
@@ -881,9 +1272,9 @@ function MainPage({ onNavigate }) {
         </motion.div>
 
         <motion.h1 initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(28px, 4.5vw, 56px)', color: C.white, lineHeight: 1.2, marginBottom: 8, fontWeight: 600 }}>
-          <span style={{ fontSize: 'clamp(16px, 2.2vw, 28px)', color: C.dim, display: 'block', marginBottom: 4, letterSpacing: '0.05em' }}>Hi, I'm</span>
-          <span style={{ display: 'block', color: C.goldBright, textShadow: `0 0 20px ${C.gold}66` }}>Mark JP.</span>
+          style={{ fontFamily: "'Cinzel', serif", lineHeight: 1.15, marginBottom: 8, fontWeight: 600 }}>
+          <span style={{ fontSize: 'clamp(13px, 1.6vw, 20px)', color: C.dim, display: 'block', letterSpacing: '0.14em', marginBottom: 6, textTransform: 'uppercase' }}>Hi, I'm</span>
+          <span style={{ fontSize: 'clamp(36px, 6vw, 72px)', display: 'block', color: C.goldBright, textShadow: `0 0 30px ${C.gold}55, 0 0 60px ${C.gold}22`, letterSpacing: '0.06em' }}>Mark</span>
         </motion.h1>
 
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.9, duration: 0.8 }}
@@ -937,16 +1328,14 @@ function MainPage({ onNavigate }) {
         </motion.div>
       </div>
 
-      {/* RIGHT SIDE — Stained Glass Chronicle */}
+      {/* RIGHT SIDE — Crystal Nexus */}
       <motion.div
         initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.9, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '52%', zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 48px 80px' }}
+        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', zIndex: 5 }}
       >
-        {/* Ambient glow behind the window */}
-        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 60% 50%, rgba(200,168,75,0.04) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <StainedGlassWindow hoveredSection={hoveredSection} />
+        <LanternScene onNavigate={onGlassNav} onHover={setHoveredSection} />
       </motion.div>
 
       {/* BOTTOM STATUS BAR — Like FF's bottom info bar */}
@@ -1582,6 +1971,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [phase, setPhase] = useState('cinematic') // cinematic | title | transition | main
   const [section, setSection] = useState(null)
+  const [glassFlash, setGlassFlash] = useState(null)
 
   useEffect(() => { setMounted(true) }, [])
   if (!mounted) return null
@@ -1589,6 +1979,13 @@ export default function Home() {
   const handleNavigate = (id) => {
     setSection(id)
     Orchestra.sectionEnter()
+  }
+
+  const handleGlassNav = (id) => {
+    setGlassFlash({ id })
+    Orchestra.transition()
+    // Section loads mid-black so it fades in behind the overlay
+    setTimeout(() => { setSection(id); Orchestra.sectionEnter() }, 520)
   }
 
   return (
@@ -1625,6 +2022,18 @@ export default function Home() {
 
       <FFCursor />
 
+      {/* Octopath-style fade to black — outside AnimatePresence, persists across section transition */}
+      {glassFlash && (
+        <motion.div
+          key={glassFlash.id + '-fade'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 1.5, times: [0, 0.30, 0.65, 1], ease: 'easeInOut' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none', background: '#000' }}
+          onAnimationComplete={() => setGlassFlash(null)}
+        />
+      )}
+
       <AnimatePresence mode="wait">
         {phase === 'cinematic' && (
           <CinematicIntro key="cinematic" onDone={() => setPhase('title')} />
@@ -1636,7 +2045,7 @@ export default function Home() {
           <Transition key="transition" onDone={() => setPhase('main')} />
         )}
         {phase === 'main' && !section && (
-          <MainPage key="main" onNavigate={handleNavigate} />
+          <MainPage key="main" onNavigate={handleNavigate} onGlassNav={handleGlassNav} />
         )}
         {phase === 'main' && section && (
           <SectionScreen key={section} id={section} onBack={() => setSection(null)} />
