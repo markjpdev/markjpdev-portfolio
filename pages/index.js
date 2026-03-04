@@ -2,2602 +2,1148 @@ import Head from 'next/head'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState, useRef, useCallback } from 'react'
 
-// ═══════════════════════════════════════════════════════════════
-//  MARK JP — Portfolio v7.0
-//  Final Fantasy Cinematic Experience
-//  Every frame is intentional. Every sound is earned.
-// ═══════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
+//  MARK JP — Portfolio v9.0
+//  Cool. Precise. No decoration that doesn't earn its place.
+// ─────────────────────────────────────────────────────────
+
+const YEARS = new Date().getFullYear() - 2014
 
 const C = {
-  black:     '#000008',
-  deep:      '#04040F',
-  bgNav:     'rgba(4,6,24,0.92)',
-  bgPanel:   'rgba(6,8,28,0.88)',
-  bgCard:    'rgba(8,10,32,0.85)',
-  border:    'rgba(140,120,60,0.35)',
-  borderBright:'rgba(200,170,80,0.7)',
-  gold:      '#C8A84B',
-  goldBright:'#F0D070',
-  goldDim:   'rgba(200,168,75,0.5)',
-  silver:    '#A8B8D0',
-  silverBright:'#D8E8F8',
-  blue:      '#4060A0',
-  blueBright:'#6090D8',
-  blueLight: '#90B8E8',
-  white:     '#F0EDE8',
-  text:      '#D8D4C8',
-  dim:       'rgba(216,212,200,0.55)',
-  dimmer:    'rgba(216,212,200,0.3)',
-  dimmest:   'rgba(216,212,200,0.14)',
-  red:       '#C04040',
-  green:     '#50A878',
+  bg:        '#0D0E12',
+  bgCard:    '#13141A',
+  bgHover:   '#181920',
+  surface:   '#1C1D24',
+  line:      'rgba(255,255,255,0.07)',
+  lineHover: 'rgba(255,255,255,0.14)',
+  text:      '#E2E4EC',
+  textDim:   'rgba(226,228,236,0.48)',
+  textMute:  'rgba(226,228,236,0.26)',
+  accent:    '#5B8DEF',
+  accentDim: 'rgba(91,141,239,0.12)',
+  accentGlow:'rgba(91,141,239,0.25)',
+  white:     '#F4F5F8',
+  green:     '#4ACA8B',
+  amber:     '#E8A830',
 }
 
-const YEARS_EXP = new Date().getFullYear() - 2014
-
-// ═══════════════════════════════════════════════════════════════
-//  ORCHESTRAL SOUND ENGINE
-//  Final Fantasy-inspired: mysterious, building, epic
-// ═══════════════════════════════════════════════════════════════
-class OrchestraEngine {
-  constructor() { this.ctx = null; this.mg = null; this.playing = false; this.enabled = true; this._nodes = [] }
-
-  init() {
-    if (this.ctx) return
-    try {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)()
-      this.mg = this.ctx.createGain()
-      this.mg.gain.setValueAtTime(0, this.ctx.currentTime)
-      this.mg.connect(this.ctx.destination)
-    } catch(e) { this.enabled = false }
-  }
-
-  _note(freq, type, dur, vol, delay = 0, detune = 0) {
-    if (!this.ctx) return
-    const o = this.ctx.createOscillator()
-    const g = this.ctx.createGain()
-    const f = this.ctx.createBiquadFilter()
-    o.type = type; o.frequency.setValueAtTime(freq, this.ctx.currentTime + delay)
-    o.detune.setValueAtTime(detune, this.ctx.currentTime + delay)
-    f.type = 'lowpass'; f.frequency.setValueAtTime(1800, this.ctx.currentTime)
-    g.gain.setValueAtTime(0, this.ctx.currentTime + delay)
-    g.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + delay + 0.08)
-    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + dur)
-    o.connect(f); f.connect(g); g.connect(this.mg)
-    o.start(this.ctx.currentTime + delay)
-    o.stop(this.ctx.currentTime + delay + dur + 0.1)
-  }
-
-  // Deep reverberant pad — strings/choir feel
-  _pad(freq, vol, dur, delay = 0) {
-    if (!this.ctx) return
-    const o = this.ctx.createOscillator()
-    const o2 = this.ctx.createOscillator()
-    const g = this.ctx.createGain()
-    const f = this.ctx.createBiquadFilter()
-    o.type = 'sine'; o2.type = 'sine'
-    o.frequency.setValueAtTime(freq, this.ctx.currentTime + delay)
-    o2.frequency.setValueAtTime(freq * 1.005, this.ctx.currentTime + delay) // slight detune for warmth
-    f.type = 'lowpass'; f.frequency.setValueAtTime(600, this.ctx.currentTime)
-    g.gain.setValueAtTime(0, this.ctx.currentTime + delay)
-    g.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + delay + 1.5)
-    g.gain.linearRampToValueAtTime(vol * 0.7, this.ctx.currentTime + delay + dur - 1)
-    g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + delay + dur)
-    o.connect(g); o2.connect(g); g.connect(f); f.connect(this.mg)
-    o.start(this.ctx.currentTime + delay); o2.start(this.ctx.currentTime + delay)
-    o.stop(this.ctx.currentTime + delay + dur + 0.1); o2.stop(this.ctx.currentTime + delay + dur + 0.1)
-    this._nodes.push(o, o2, g, f)
-  }
-
-  // The cinematic intro music — mysterious, builds slowly
-  playIntro() {
-    if (!this.enabled || !this.ctx) return
-    this.mg.gain.setValueAtTime(0, this.ctx.currentTime)
-    this.mg.gain.linearRampToValueAtTime(0.7, this.ctx.currentTime + 2)
-
-    // Bass drone — deep mystery
-    this._pad(55, 0.18, 12, 0)
-    this._pad(82.4, 0.1, 10, 0.5)
-
-    // Mysterious rising strings
-    const melody = [220, 246.94, 261.63, 293.66, 329.63, 349.23, 392, 440]
-    melody.forEach((f, i) => this._pad(f, 0.06, 3, 2 + i * 0.35))
-
-    // Harp-like arpeggios
-    const harp = [261.63, 329.63, 392, 523.25, 659.25, 783.99]
-    harp.forEach((f, i) => this._note(f, 'sine', 0.8, 0.08, 3 + i * 0.18))
-    harp.forEach((f, i) => this._note(f, 'sine', 0.8, 0.06, 5 + i * 0.18))
-
-    // Choir-like swell
-    ;[130.81, 164.81, 196, 261.63].forEach((f, i) => this._pad(f, 0.07, 6, 4 + i * 0.3))
-  }
-
-  // Login screen ambient loop
-  playAmbient() {
-    if (!this.enabled || !this.ctx || this.playing) return
-    this.playing = true
-
-    const loop = () => {
-      if (!this.playing) return
-      // Soft mystery chord
-      ;[110, 138.59, 164.81, 220].forEach((f, i) => this._pad(f, 0.04, 8, i * 0.2))
-      // Gentle harp melody
-      const mel = [329.63, 392, 440, 392, 349.23, 329.63, 293.66, 261.63]
-      mel.forEach((f, i) => this._note(f, 'sine', 1.0, 0.05, i * 0.4))
-      this._loopTimer = setTimeout(loop, 7000)
-    }
-    setTimeout(loop, 500)
-  }
-
-  stopAmbient() {
-    this.playing = false
-    clearTimeout(this._loopTimer)
-    if (this.mg && this.ctx) {
-      this.mg.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1)
-      setTimeout(() => { this.mg && this.mg.gain.setValueAtTime(0.5, this.ctx.currentTime) }, 1200)
-    }
-  }
-
-  // Main page ambient — softer, deeper, more mysterious than login screen
-  playMainAmbient() {
-    if (!this.enabled || !this.ctx || this.playing) return
-    this.playing = true
-    const loop = () => {
-      if (!this.playing) return
-      // Deep bass drone
-      this._pad(55, 0.05, 9, 0); this._pad(82.4, 0.03, 7, 1.5)
-      // Slow harp arpeggios
-      const harp = [196, 246.94, 293.66, 369.99, 392, 493.88]
-      harp.forEach((f, i) => this._note(f, 'sine', 1.4, 0.025, 2 + i * 0.7))
-      // Soft mystery pad chord
-      ;[110, 138.59, 164.81].forEach((f, i) => this._pad(f, 0.02, 7, 4 + i * 0.5))
-      this._loopTimer = setTimeout(loop, 10000)
-    }
-    setTimeout(loop, 400)
-  }
-
-  setVol(v) { if (this.mg && this.ctx) this.mg.gain.linearRampToValueAtTime(v, this.ctx.currentTime + 0.5) }
-
-  // UI sounds — classic FF menu
-  menuMove()    { this._note(880, 'sine', 0.08, 0.12) }
-  menuConfirm() { this._note(1047, 'sine', 0.06, 0.14); setTimeout(() => this._note(1319, 'sine', 0.1, 0.12), 60) }
-  menuCancel()  { this._note(440, 'sine', 0.12, 0.1, 0); this._note(330, 'sine', 0.15, 0.08, 0.1) }
-  transition()  {
-    // Dramatic FF-style transition chord
-    ;[261.63, 329.63, 392, 523.25].forEach((f, i) => this._note(f, 'sine', 0.6, 0.12, i * 0.05))
-    setTimeout(() => { ;[523.25, 659.25, 783.99, 1046.50].forEach((f, i) => this._note(f, 'sine', 0.8, 0.1, i * 0.04)) }, 300)
-  }
-  sectionEnter() { ;[523, 659, 784].forEach((f, i) => this._note(f, 'sine', 0.4, 0.08, i * 0.07)) }
-}
-
-const Orchestra = new OrchestraEngine()
-
-// ═══════════════════════════════════════════════════════════════
-//  LIGHT BEAM CANVAS — Like FF's light rays through clouds
-// ═══════════════════════════════════════════════════════════════
-function LightBeams({ opacity = 1 }) {
-  const ref = useRef(null)
-  useEffect(() => {
-    const cv = ref.current; if (!cv) return
-    const ctx = cv.getContext('2d'); let id
-    const resize = () => { cv.width = window.innerWidth; cv.height = window.innerHeight }
-    resize(); window.addEventListener('resize', resize)
-    let t = 0
-
-    const beams = Array.from({ length: 6 }, (_, i) => ({
-      x: 0.1 + (i / 6) * 0.85,
-      width: 0.04 + Math.random() * 0.06,
-      speed: 0.0003 + Math.random() * 0.0004,
-      phase: Math.random() * Math.PI * 2,
-      color: i % 2 === 0 ? [180, 160, 80] : [100, 140, 220],
-    }))
-
-    const draw = () => {
-      ctx.clearRect(0, 0, cv.width, cv.height)
-      t += 0.01
-
-      beams.forEach(b => {
-        const alpha = (0.015 + 0.01 * Math.sin(t * b.speed * 100 + b.phase)) * opacity
-        const cx = b.x * cv.width + Math.sin(t * b.speed * 100 + b.phase) * 40
-        const w = b.width * cv.width
-
-        const g = ctx.createLinearGradient(0, 0, 0, cv.height)
-        g.addColorStop(0, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},0)`)
-        g.addColorStop(0.2, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},${alpha})`)
-        g.addColorStop(0.7, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},${alpha * 0.6})`)
-        g.addColorStop(1, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},0)`)
-
-        ctx.beginPath()
-        ctx.moveTo(cx - w / 2, 0)
-        ctx.lineTo(cx + w / 2, 0)
-        ctx.lineTo(cx + w * 0.7, cv.height)
-        ctx.lineTo(cx - w * 0.7, cv.height)
-        ctx.closePath()
-        ctx.fillStyle = g
-        ctx.fill()
-      })
-
-      id = requestAnimationFrame(draw)
-    }
-    draw()
-    return () => { cancelAnimationFrame(id); window.removeEventListener('resize', resize) }
-  }, [opacity])
-  return <canvas ref={ref} aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }} />
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PARTICLE FIELD — Crystal dust, embers, magic motes
-// ═══════════════════════════════════════════════════════════════
-function CrystalDust({ count = 80 }) {
-  const ref = useRef(null)
-  useEffect(() => {
-    const cv = ref.current; if (!cv) return
-    const ctx = cv.getContext('2d'); let id
-    const resize = () => { cv.width = window.innerWidth; cv.height = window.innerHeight }
-    resize(); window.addEventListener('resize', resize)
-
-    const pts = Array.from({ length: count }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 2 + 0.3,
-      a: Math.random() * 0.7 + 0.1,
-      vx: (Math.random() - 0.5) * 0.18,
-      vy: -(Math.random() * 0.2 + 0.03),
-      p: Math.random() * Math.PI * 2,
-      ps: Math.random() * 0.012 + 0.004,
-      type: Math.floor(Math.random() * 3), // 0=gold, 1=blue, 2=silver
-    }))
-
-    const COLORS = [
-      [200, 168, 75],   // gold
-      [96, 144, 216],   // blue
-      [168, 184, 208],  // silver
-    ]
-
-    const draw = () => {
-      ctx.clearRect(0, 0, cv.width, cv.height)
-      pts.forEach(p => {
-        p.p += p.ps
-        const al = p.a * (0.3 + 0.7 * Math.sin(p.p))
-        p.x += p.vx; p.y += p.vy
-        if (p.y < -10) { p.y = cv.height + 10; p.x = Math.random() * cv.width }
-        if (p.x < -10) p.x = cv.width + 10
-        if (p.x > cv.width + 10) p.x = -10
-
-        const [r, g, b] = COLORS[p.type]
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4)
-        grad.addColorStop(0, `rgba(${r},${g},${b},${al.toFixed(2)})`)
-        grad.addColorStop(1, `rgba(${r},${g},${b},0)`)
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2)
-        ctx.fillStyle = grad; ctx.fill()
-
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${r},${g},${b},${Math.min(1, al * 2).toFixed(2)})`; ctx.fill()
-      })
-      id = requestAnimationFrame(draw)
-    }
-    draw()
-    return () => { cancelAnimationFrame(id); window.removeEventListener('resize', resize) }
-  }, [count])
-  return <canvas ref={ref} aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1 }} />
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  FF CURSOR — Classic Final Fantasy menu arrow
-//  White arrow pointing upper-left, gold glow on hover, blinks on interactive
-// ═══════════════════════════════════════════════════════════════
-function FFCursor() {
-  const [pos, setPos] = useState({ x: -200, y: -200 })
-  const [clicking, setClicking] = useState(false)
-  const [hovering, setHovering] = useState(false)
-  const [flash, setFlash] = useState(false)
-
-  useEffect(() => {
-    const mv = e => {
-      setPos({ x: e.clientX, y: e.clientY })
-      setHovering(!!document.elementFromPoint(e.clientX, e.clientY)?.closest('button,a,.click'))
-    }
-    const dn = () => { setClicking(true); setFlash(true); Orchestra.menuConfirm(); setTimeout(() => setFlash(false), 180) }
-    const up = () => setClicking(false)
-    window.addEventListener('mousemove', mv)
-    window.addEventListener('mousedown', dn)
-    window.addEventListener('mouseup', up)
-    return () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mousedown', dn); window.removeEventListener('mouseup', up) }
-  }, [])
-
-  // Classic cursor arrow path pointing upper-left
-  // Tip at (2,2), forms the familiar mouse-cursor arrow shape
-  const fill  = flash ? '#FFFFFF' : hovering ? C.goldBright : '#E8E4DC'
-  const glow  = hovering ? C.gold : 'rgba(232,228,220,0.4)'
-  const scale = clicking ? 0.82 : 1
-
-  return (
-    <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 9999, pointerEvents: 'none' }}>
-      <svg
-        width={22} height={26} viewBox="0 0 22 26"
-        style={{
-          position: 'fixed', left: pos.x, top: pos.y,
-          transform: `scale(${scale})`, transformOrigin: '2px 2px',
-          transition: 'transform 0.08s',
-          filter: `drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 7px ${hovering ? C.gold + '88' : 'transparent'})`,
-          animation: hovering && !clicking ? 'cursorBlink 0.9s ease-in-out infinite' : 'none',
-        }}
-      >
-        {/* Classic arrow cursor shape */}
-        <path
-          d="M 2,2 L 2,20 L 6,15 L 9,22 L 12,21 L 9,14 L 15,14 Z"
-          fill={fill}
-          stroke="rgba(4,4,15,0.7)"
-          strokeWidth="1"
-          strokeLinejoin="round"
-          style={{ transition: 'fill 0.15s' }}
-        />
-        {/* Notch highlight — gives the FF pixel-art feel */}
-        <path
-          d="M 3,3 L 3,16 L 6,12"
-          fill="none"
-          stroke="rgba(255,255,255,0.45)"
-          strokeWidth="1"
-          strokeLinecap="round"
-        />
-      </svg>
-    </div>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PHASE 1 — CINEMATIC INTRO
-//  Pure darkness. Music begins. World slowly emerges.
-//  Like the opening of Final Fantasy — before the title appears.
-// ═══════════════════════════════════════════════════════════════
-function CinematicIntro({ onDone }) {
+// ─────────────────────────────────────────────────────────
+//  PHASE 1 — INTRO
+//  Precise. No drama. Just the name arriving with intent.
+// ─────────────────────────────────────────────────────────
+function Intro({ onDone }) {
   const [step, setStep] = useState(0)
-  const [showSkip, setShowSkip] = useState(false)
-  const timersRef = useRef([])
-  // 0: black  1: light begins  2: dust appears  3: title  4: subtitle  5: complete
 
   useEffect(() => {
-    Orchestra.init()
-    const timings = [
-      [600,  () => { setStep(1); Orchestra.playIntro() }],
-      [1800, () => setStep(2)],
-      [3200, () => setStep(3)],
-      [4400, () => setStep(4)],
-      [6000, () => setStep(5)],
-      [7200, () => onDone()],
+    const ts = [
+      [300,  () => setStep(1)],
+      [900,  () => setStep(2)],
+      [1700, () => setStep(3)],
+      [2600, () => setStep(4)],
+      [3600, () => onDone()],
     ]
-    timersRef.current = timings.map(([t, fn]) => setTimeout(fn, t))
-    timersRef.current.push(setTimeout(() => setShowSkip(true), 1500))
-    return () => timersRef.current.forEach(clearTimeout)
-  }, [])
-
-  useEffect(() => {
-    const skip = e => { if (e.key === 'Escape') { timersRef.current.forEach(clearTimeout); onDone() } }
-    window.addEventListener('keydown', skip)
-    return () => window.removeEventListener('keydown', skip)
+    const timers = ts.map(([t, fn]) => setTimeout(fn, t))
+    return () => timers.forEach(clearTimeout)
   }, [onDone])
 
   return (
-    <motion.div exit={{ opacity: 0 }} transition={{ duration: 1.2 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: C.black, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <motion.div
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6, ease: 'easeInOut' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: C.bg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      {/* Precise grid lines — the engineering aesthetic */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: `linear-gradient(${C.line} 1px, transparent 1px), linear-gradient(90deg, ${C.line} 1px, transparent 1px)`,
+        backgroundSize: '80px 80px',
+        maskImage: 'radial-gradient(ellipse 60% 60% at 50% 50%, black 30%, transparent 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 60% 60% at 50% 50%, black 30%, transparent 100%)',
+      }} />
 
-      {step >= 1 && <LightBeams opacity={step >= 2 ? 1 : 0.3} />}
-      {step >= 2 && <CrystalDust count={60} />}
+      <div style={{ position: 'relative', textAlign: 'center' }}>
 
-      {/* Vignette */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,8,0.8) 100%)', pointerEvents: 'none', zIndex: 2 }} />
+        {/* Loading bar */}
+        <div style={{ width: 200, height: 1, background: C.line, marginBottom: 48, margin: '0 auto 48px' }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: step >= 1 ? '100%' : 0 }}
+            transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1] }}
+            style={{ height: '100%', background: C.accent }}
+          />
+        </div>
 
-      <div style={{ position: 'relative', zIndex: 3, textAlign: 'center' }}>
+        {/* Name */}
+        <AnimatePresence>
+          {step >= 2 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 'clamp(48px, 8vw, 88px)',
+                color: C.white,
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
+                marginBottom: 16,
+              }}>
+                Mark JP
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Label */}
         <AnimatePresence>
           {step >= 3 && (
             <motion.div
-              initial={{ opacity: 0, letterSpacing: '0.5em', filter: 'blur(12px)' }}
-              animate={{ opacity: 1, letterSpacing: '0.15em', filter: 'blur(0px)' }}
-              transition={{ duration: 2.5, ease: [0.16, 1, 0.3, 1] }}
-              style={{ fontFamily: "'Cinzel', 'Press Start 2P', serif", fontSize: 'clamp(48px, 10vw, 96px)', color: C.goldBright, textShadow: `0 0 30px ${C.gold}88, 0 0 80px ${C.gold}33`, marginBottom: 12 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11,
+                color: C.accent,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+              }}
             >
-              MJP
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {step >= 4 && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.5, ease: 'easeOut' }}
-              style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(11px, 1.8vw, 16px)', color: C.silver, letterSpacing: '0.4em', textTransform: 'uppercase' }}
-            >
-              Just a Tech Guy.
+              Engineer · Analyst · Builder
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {showSkip && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="click"
-          onClick={() => { timersRef.current.forEach(clearTimeout); onDone() }}
-          onMouseOver={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.goldBright }}
-          onMouseOut={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.silver }}
-          style={{ position: 'absolute', bottom: 28, right: 32, fontFamily: 'VT323, monospace', fontSize: 16, color: C.silver, letterSpacing: '0.2em', zIndex: 10, border: `1px solid ${C.border}`, padding: '6px 16px', borderRadius: 2, animation: 'ffBlink 1.6s ease-in-out infinite', background: 'rgba(0,0,8,0.55)', backdropFilter: 'blur(8px)', transition: 'border-color .2s, color .2s' }}>
-          ESC · SKIP
-        </motion.div>
-      )}
+      {/* Version tag */}
+      <AnimatePresence>
+        {step >= 1 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              position: 'absolute', bottom: 32, right: 40,
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 10, color: C.textMute, letterSpacing: '0.1em',
+            }}
+          >
+            v9.0.0
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  PHASE 2 — TITLE SCREEN (FF Login Screen)
-//  Elegant. The world is revealed. You choose to enter.
-// ═══════════════════════════════════════════════════════════════
-function TitleScreen({ onStart }) {
+// ─────────────────────────────────────────────────────────
+//  PHASE 2 — TITLE SCREEN
+//  Still. Confident. Waiting.
+// ─────────────────────────────────────────────────────────
+function TitleScreen({ onEnter }) {
   const [ready, setReady] = useState(false)
+  const [entering, setEntering] = useState(false)
 
   useEffect(() => {
-    Orchestra.playAmbient()
-    const t = setTimeout(() => setReady(true), 800)
+    const t = setTimeout(() => setReady(true), 400)
     return () => clearTimeout(t)
   }, [])
 
-  const enter = useCallback(() => {
-    Orchestra.stopAmbient()
-    Orchestra.transition()
-    onStart()
-  }, [onStart])
+  const handleEnter = useCallback(() => {
+    if (entering) return
+    setEntering(true)
+    setTimeout(onEnter, 500)
+  }, [entering, onEnter])
 
   useEffect(() => {
     if (!ready) return
-    const h = () => enter()
+    const h = e => {
+      if (!['Tab', 'Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) handleEnter()
+    }
     window.addEventListener('keydown', h, { once: true })
     return () => window.removeEventListener('keydown', h)
-  }, [ready, enter])
+  }, [ready, handleEnter])
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 1, ease: 'easeInOut' }}
-      onClick={ready ? enter : undefined}
-      style={{ position: 'fixed', inset: 0, zIndex: 900, background: C.black, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'none', overflow: 'hidden' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      onClick={ready ? handleEnter : undefined}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 900,
+        background: C.bg, cursor: 'pointer',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+      }}
     >
-      <LightBeams opacity={0.8} />
-      <CrystalDust count={90} />
+      {/* Grid */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: `linear-gradient(${C.line} 1px, transparent 1px), linear-gradient(90deg, ${C.line} 1px, transparent 1px)`,
+        backgroundSize: '80px 80px',
+        maskImage: 'radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 100%)',
+      }} />
 
-      {/* Deep radial darkness */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 90% 75% at 50% 60%, transparent 20%, rgba(0,0,8,0.75) 100%)', pointerEvents: 'none', zIndex: 2 }} />
-      {/* Bottom darkness */}
-      <div aria-hidden style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: 'linear-gradient(to top, rgba(0,0,8,0.9), transparent)', pointerEvents: 'none', zIndex: 2 }} />
+      {/* Accent dot — top left corner for visual anchoring */}
+      <div style={{ position: 'absolute', top: 40, left: 48, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 6, height: 6, background: C.accent, borderRadius: '50%' }} />
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.12em' }}>MARKJP.DEV</span>
+      </div>
 
-      <div style={{ position: 'relative', zIndex: 3, textAlign: 'center', width: '100%', padding: '0 24px' }}>
-
-        {/* Top ornamental lines */}
-        <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1.5, delay: 0.3 }}
-          style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 32 }}>
-          <div style={{ flex: 1, maxWidth: 200, height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}77)` }} />
-          <div style={{ width: 6, height: 6, background: C.gold, transform: 'rotate(45deg)', boxShadow: `0 0 8px ${C.gold}` }} />
-          <div style={{ flex: 1, maxWidth: 200, height: 1, background: `linear-gradient(90deg, ${C.gold}77, transparent)` }} />
+      {/* Main content */}
+      <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 'clamp(60px, 10vw, 120px)',
+            color: C.white,
+            fontWeight: 800,
+            letterSpacing: '-0.04em',
+            lineHeight: 0.95,
+            marginBottom: 32,
+          }}>
+            Mark JP
+          </div>
         </motion.div>
 
-        {/* Main Title */}
-        <motion.div initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 1.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}>
-          <div style={{ fontFamily: "'Cinzel', 'Press Start 2P', serif", fontSize: 'clamp(52px, 11vw, 100px)', color: C.goldBright, textShadow: `0 0 25px ${C.gold}99, 0 0 70px ${C.gold}44`, letterSpacing: '0.15em', lineHeight: 1 }}>
-            MJP
-          </div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(10px, 1.6vw, 14px)', color: C.silver, letterSpacing: '0.5em', marginTop: 10, marginBottom: 48, textTransform: 'uppercase' }}>
-            Portfolio · Version VII
-          </div>
-        </motion.div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          style={{
+            width: 1, height: 48,
+            background: `linear-gradient(to bottom, ${C.accent}, transparent)`,
+            margin: '0 auto 32px',
+          }}
+        />
 
-        {/* Bottom ornamental line */}
-        <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1.5, delay: 0.6 }}
-          style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginBottom: 52 }}>
-          <div style={{ flex: 1, maxWidth: 200, height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}77)` }} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            {[0,1,2].map(i => <div key={i} style={{ width: 4, height: 4, background: C.goldDim, transform: 'rotate(45deg)' }} />)}
-          </div>
-          <div style={{ flex: 1, maxWidth: 200, height: 1, background: `linear-gradient(90deg, ${C.gold}77, transparent)` }} />
-        </motion.div>
-
-        {/* Press Start */}
+        {/* Press any key */}
         <AnimatePresence>
           {ready && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(10px, 1.8vw, 14px)', color: C.goldBright, letterSpacing: '0.4em', animation: 'ffBlink 1.6s ease-in-out infinite', textTransform: 'uppercase' }}>
-                Press Any Button
-              </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 1, 0.2, 1] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11,
+                color: C.textMute,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Press any key to continue
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
 
-        {/* Copyright */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.4 }} transition={{ delay: 1.5 }}
-          style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', fontFamily: "'Cinzel', serif", fontSize: 11, color: C.dimmer, letterSpacing: '0.2em', whiteSpace: 'nowrap' }}>
-          © {new Date().getFullYear()} Mark JP · All Rights Reserved
-        </motion.div>
+      {/* Bottom info row */}
+      <div style={{
+        position: 'absolute', bottom: 32, left: 0, right: 0,
+        padding: '0 48px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.1em' }}>
+          Quezon City, PH
+        </span>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.1em' }}>
+          © {new Date().getFullYear()}
+        </span>
       </div>
     </motion.div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DRAMATIC TRANSITION — Full screen flash + fade
-//  That short "wow" moment between title and main
-// ═══════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
+//  TRANSITION — Clean wipe, no drama
+// ─────────────────────────────────────────────────────────
 function Transition({ onDone }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 1800)
+    const t = setTimeout(onDone, 900)
     return () => clearTimeout(t)
   }, [onDone])
 
   return (
-    <motion.div style={{ position: 'fixed', inset: 0, zIndex: 950, pointerEvents: 'none' }}>
-      {/* White flash */}
+    <motion.div
+      style={{ position: 'fixed', inset: 0, zIndex: 950, pointerEvents: 'none' }}
+    >
       <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: [0, 0.8, 0] }}
-        transition={{ duration: 0.6, times: [0, 0.3, 1] }}
-        style={{ position: 'absolute', inset: 0, background: 'white' }}
-      />
-      {/* Iris wipe — circle expands from center */}
-      <motion.div
-        initial={{ clipPath: 'circle(0% at 50% 50%)' }}
-        animate={{ clipPath: 'circle(150% at 50% 50%)' }}
-        transition={{ duration: 1.4, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        style={{ position: 'absolute', inset: 0, background: C.black }}
+        initial={{ scaleY: 0, transformOrigin: 'top' }}
+        animate={{ scaleY: [0, 1, 1, 0] }}
+        transition={{ duration: 0.9, times: [0, 0.4, 0.6, 1], ease: 'easeInOut' }}
+        style={{ position: 'absolute', inset: 0, background: C.accent, transformOrigin: 'top' }}
       />
     </motion.div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  FF-STYLE MENU WINDOW
-//  Classic Final Fantasy menu — slides in, options with ▶ cursor
-// ═══════════════════════════════════════════════════════════════
-const MENU_ITEMS = [
-  { id: 'profile', label: 'Profile',    icon: '✦', desc: 'Character · Story · Stats' },
-  { id: 'skills',  label: 'Abilities',  icon: '⚡', desc: 'Skills · Tier · Inventory' },
-  { id: 'quests',  label: 'Quest Log',  icon: '📜', desc: 'Projects · Completed · Sealed' },
-  { id: 'contact', label: 'Message',    icon: '✉',  desc: 'Send · Connect · Collaborate' },
-]
-
-function FFMenu({ onSelect, onClose, onHover }) {
-  const [cursor, setCursor] = useState(0)
-
-  useEffect(() => {
-    const handler = e => {
-      if (e.key === 'ArrowDown')  { setCursor(c => { const n = (c+1)%MENU_ITEMS.length; Orchestra.menuMove(); onHover?.(MENU_ITEMS[n].id); return n }) }
-      if (e.key === 'ArrowUp')    { setCursor(c => { const n = (c-1+MENU_ITEMS.length)%MENU_ITEMS.length; Orchestra.menuMove(); onHover?.(MENU_ITEMS[n].id); return n }) }
-      if (e.key === 'Enter')      { Orchestra.menuConfirm(); onSelect(MENU_ITEMS[cursor].id) }
-      if (e.key === 'Escape')     { Orchestra.menuCancel(); onClose() }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [cursor, onSelect, onClose, onHover])
+// ─────────────────────────────────────────────────────────
+//  NAV — Top bar, clean
+// ─────────────────────────────────────────────────────────
+function TopBar({ currentSection, onNavigate }) {
+  const SECTIONS = ['about', 'skills', 'projects', 'contact']
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -40, scaleX: 0.85 }}
-      animate={{ opacity: 1, x: 0, scaleX: 1 }}
-      exit={{ opacity: 0, x: -30, scaleX: 0.9 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
       style={{
-        position: 'fixed', left: 40, top: '50%', transform: 'translateY(-50%)',
-        width: 260, zIndex: 200,
-        background: C.bgNav,
-        border: `1px solid ${C.border}`,
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        height: 56,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 clamp(24px, 5vw, 64px)',
+        background: 'rgba(13,14,18,0.88)',
         backdropFilter: 'blur(20px)',
-        borderRadius: 2,
-        overflow: 'hidden',
+        borderBottom: `1px solid ${C.line}`,
       }}
     >
-      {/* Top border glow */}
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}88, transparent)` }} />
+      {/* Logo */}
+      <button
+        onClick={() => onNavigate('home')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, padding: 0 }}
+      >
+        <div style={{
+          width: 26, height: 26,
+          border: `1px solid ${C.accent}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, color: C.accent, fontWeight: 800 }}>M</span>
+        </div>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, color: C.text, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          markjp.dev
+        </span>
+      </button>
 
-      <div style={{ padding: '8px 0' }}>
-        {MENU_ITEMS.map((item, i) => (
-          <div key={item.id}
-            className="click"
-            onMouseEnter={() => { setCursor(i); Orchestra.menuMove(); onHover?.(item.id) }}
-            onMouseLeave={() => onHover?.(null)}
-            onClick={() => { Orchestra.menuConfirm(); onSelect(item.id) }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '12px 20px', cursor: 'none',
-              background: cursor === i ? 'rgba(200,168,75,0.08)' : 'transparent',
-              transition: 'background 0.15s',
-              position: 'relative',
-            }}
-          >
-            {/* FF cursor arrow */}
-            <motion.div
-              animate={{ opacity: cursor === i ? 1 : 0, x: cursor === i ? 0 : -4 }}
-              transition={{ duration: 0.12 }}
-              style={{ position: 'absolute', left: 8, color: C.goldBright, fontFamily: 'serif', fontSize: 10 }}
-            >▶</motion.div>
-
-            <span style={{ fontSize: 14, marginLeft: 8 }}>{item.icon}</span>
-            <div>
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 13, color: cursor === i ? C.goldBright : C.text, letterSpacing: '0.05em', transition: 'color 0.15s', textShadow: cursor === i ? `0 0 8px ${C.gold}66` : 'none' }}>{item.label}</div>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmer, letterSpacing: '0.05em' }}>{item.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom border */}
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}55, transparent)` }} />
-      <div style={{ padding: '8px 20px', display: 'flex', gap: 20 }}>
-        <span style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer }}>↑↓ NAVIGATE</span>
-        <span style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer }}>ENTER SELECT</span>
-        <span style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer }}>ESC CLOSE</span>
+      {/* Nav links */}
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        {SECTIONS.map(s => {
+          const active = currentSection === s
+          return (
+            <button key={s} onClick={() => onNavigate(s)}
+              style={{
+                background: active ? C.accentDim : 'none',
+                border: 'none', cursor: 'pointer',
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11, color: active ? C.accent : C.textMute,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                padding: '6px 14px',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => { if (!active) e.currentTarget.style.color = C.textDim }}
+              onMouseOut={e => { if (!active) e.currentTarget.style.color = C.textMute }}
+            >{s}</button>
+          )
+        })}
+        <div style={{ width: 1, height: 16, background: C.line, margin: '0 8px' }} />
+        <a href="mailto:mark@markjp.dev"
+          style={{
+            fontFamily: "'DM Mono', monospace", fontSize: 11,
+            color: C.accent, letterSpacing: '0.08em',
+            textDecoration: 'none', padding: '6px 14px',
+            border: `1px solid ${C.accent}22`,
+            transition: 'all 0.2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = C.accentDim; e.currentTarget.style.borderColor = C.accent + '55' }}
+          onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.accent + '22' }}
+        >hire</a>
       </div>
     </motion.div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  STAINED GLASS — Gothic window, 4 section panels
-//  Lives on the right of MainPage; mini badge in section headers
-// ═══════════════════════════════════════════════════════════════
-const GLASS_CFG = {
-  profile: { col: '#C8A84B', glow: '#F0D070', cx: 83,  cy: 130 },
-  skills:  { col: '#4060A0', glow: '#6090D8', cx: 197, cy: 130 },
-  quests:  { col: '#50A878', glow: '#70D898', cx: 83,  cy: 285 },
-  contact: { col: '#7060C0', glow: '#A090F0', cx: 197, cy: 285 },
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  SOLOPATH SCENE — Octopath Traveler II aesthetic, ultra-detailed
-//  3-layer parallax · god rays · cobblestone ground · detailed lantern
-//  pixel-art character silhouette · ember particles · film grain
-//  proximity-based card brightness · mouse parallax · firefly motes
-// ═══════════════════════════════════════════════════════════════
-function LanternScene({ onNavigate, onHover }) {
-  const canvasRef = useRef(null)
-  const rafRef    = useRef(null)
-  const hovRef    = useRef(null)
-  const hitRef    = useRef({})
-  const mouseRef  = useRef({ x: 0.5, y: 0.5 })
-  const grainRef  = useRef(null)
-  const grainTick = useRef(0)
+// ─────────────────────────────────────────────────────────
+//  HOME SCREEN — Full viewport, left-weighted
+// ─────────────────────────────────────────────────────────
+function HomeScreen({ onNavigate }) {
+  const roles = ['Business Analyst', 'App Support Engineer', 'Clinical Systems Specialist', 'Backend Engineer']
+  const [roleIdx, setRoleIdx] = useState(0)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    const ctx    = canvas.getContext('2d')
-    let W = 0, H = 0, t = 0
-
-    // ── Particle pools ──
-    const bokeh   = []   // mid-layer depth-of-field orbs
-    const farBokeh= []   // far-layer faint orbs (very slow)
-    const embers  = []   // rising ember sparks from flame
-    const motes   = []   // firefly orbital motes near lantern
-
-    // ── Chapter card configuration ──
-    const CARDS = [
-      { id: 'profile', label: 'PROFILE',   roman: 'I',   sub: 'Character · Story',  ix: -0.25, iy: -0.22 },
-      { id: 'skills',  label: 'ABILITIES', roman: 'II',  sub: 'Skills · Mastery',    ix:  0.25, iy: -0.22 },
-      { id: 'quests',  label: 'QUEST LOG', roman: 'III', sub: 'Projects · Archive',  ix: -0.25, iy:  0.22 },
-      { id: 'contact', label: 'MESSAGE',   roman: 'IV',  sub: 'Send · Connect',      ix:  0.25, iy:  0.22 },
-    ]
-
-    // ── Pre-computed film grain (256×256 noise texture, refreshed every 6 frames) ──
-    const buildGrain = () => {
-      const gc = document.createElement('canvas')
-      gc.width = 256; gc.height = 256
-      const gx = gc.getContext('2d')
-      const id = gx.createImageData(256, 256)
-      for (let i = 0; i < id.data.length; i += 4) {
-        const v = (Math.random() * 255) | 0
-        id.data[i] = id.data[i+1] = id.data[i+2] = v
-        id.data[i+3] = 255
-      }
-      gx.putImageData(id, 0, 0)
-      grainRef.current = gc
-    }
-    buildGrain()
-
-    const resize = () => {
-      const pr = Math.min(window.devicePixelRatio || 1, 2)
-      W = canvas.offsetWidth; H = canvas.offsetHeight
-      canvas.width = W * pr; canvas.height = H * pr
-      ctx.setTransform(pr, 0, 0, pr, 0, 0)
-      if (bokeh.length === 0) {
-        // Far bokeh — large, very faint, slow
-        for (let i = 0; i < 40; i++) farBokeh.push({
-          x: Math.random()*W, y: Math.random()*H,
-          r: 14+Math.random()*28,
-          op: 0.016+Math.random()*0.06,
-          vy: 0.018+Math.random()*0.05,
-          vx: (Math.random()-0.5)*0.025,
-          ph: Math.random()*Math.PI*2,
-          col: ['#F0C870','#C8A84B','#FFE8B0','#E8B860'][Math.floor(Math.random()*4)],
-        })
-        // Mid bokeh — medium, warm
-        for (let i = 0; i < 55; i++) bokeh.push({
-          x: Math.random()*W, y: Math.random()*H,
-          r: 2+Math.random()*9,
-          op: 0.035+Math.random()*0.18,
-          vy: 0.05+Math.random()*0.18,
-          vx: (Math.random()-0.5)*0.06,
-          ph: Math.random()*Math.PI*2,
-          col: ['#F0D070','#C8A84B','#FFE8B0','#FFF4D0','#E8C87A'][Math.floor(Math.random()*5)],
-        })
-        // Ember sparks
-        for (let i = 0; i < 28; i++) embers.push({
-          x: 0, y: 0,
-          vx: (Math.random()-0.5)*0.55,
-          vy: -(0.45+Math.random()*0.9),
-          life: Math.random(),
-          maxLife: 0.7+Math.random()*1.2,
-          sz: 0.7+Math.random()*1.3,
-          ph: Math.random()*Math.PI*2,
-        })
-        // Firefly motes
-        for (let i = 0; i < 22; i++) motes.push({
-          ang: Math.random()*Math.PI*2,
-          rad: 30+Math.random()*90,
-          spd: (Math.random()-0.5)*0.005,
-          ph:  Math.random()*Math.PI*2,
-          sz:  0.8+Math.random()*1.6,
-        })
-      }
-    }
-    resize()
-
-    // ═══ DRAW: Deep darkness base background ═══
-    const drawBg = (mx, my) => {
-      // Deep space-black
-      ctx.fillStyle = '#060408'
-      ctx.fillRect(0, 0, W, H)
-
-      // ── Far silhouette layer (city/treeline roofscape) ──
-      // Parallax offset: slowest layer (-20px max)
-      const fParX = (mx - 0.5) * -20
-      const fParY = (my - 0.5) * -10
-      ctx.save()
-      ctx.translate(fParX, fParY)
-
-      // Draw irregular rooftop skyline silhouette
-      ctx.fillStyle = 'rgba(4,3,8,0.92)'
-      ctx.beginPath()
-      ctx.moveTo(-30, H)
-      // Generate rooftop peaks from a deterministic pattern
-      const peaks = [
-        [0,0.72],[0.04,0.60],[0.07,0.62],[0.09,0.52],[0.13,0.68],[0.17,0.44],
-        [0.20,0.62],[0.23,0.48],[0.27,0.66],[0.30,0.55],[0.32,0.57],[0.35,0.41],
-        [0.38,0.58],[0.41,0.52],[0.44,0.65],[0.47,0.48],[0.50,0.43],[0.53,0.55],
-        [0.56,0.60],[0.59,0.47],[0.62,0.53],[0.65,0.40],[0.68,0.56],[0.71,0.62],
-        [0.74,0.50],[0.77,0.45],[0.80,0.58],[0.83,0.53],[0.87,0.64],[0.90,0.50],
-        [0.93,0.68],[0.96,0.55],[1.00,0.62],[1.03,0.72],
-      ]
-      peaks.forEach(([xr, yr]) => ctx.lineTo(xr * W, yr * H))
-      ctx.lineTo(W+30, H); ctx.closePath(); ctx.fill()
-
-      // Faint warm glow at horizon behind roofline
-      const horizG = ctx.createLinearGradient(0, H*0.48, 0, H*0.72)
-      horizG.addColorStop(0,   'rgba(80,45,10,0.08)')
-      horizG.addColorStop(0.5, 'rgba(50,28,6,0.04)')
-      horizG.addColorStop(1,   'transparent')
-      ctx.fillStyle = horizG; ctx.fillRect(0, H*0.40, W, H*0.35)
-
-      ctx.restore()
-
-      // ── Vignette (deep black edges) ──
-      const vg = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.2, W/2, H/2, Math.max(W,H)*0.85)
-      vg.addColorStop(0,   'transparent')
-      vg.addColorStop(0.6, 'rgba(2,1,4,0.25)')
-      vg.addColorStop(1,   'rgba(0,0,0,0.90)')
-      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H)
-    }
-
-    // ═══ DRAW: Cobblestone ground ═══
-    const drawGround = (lx, ly, fs) => {
-      const groundY = ly + H * 0.32  // ground plane below lantern
-      const ph = (mouseRef.current.x - 0.5) * -35  // parallax
-
-      ctx.save()
-      ctx.translate(ph, 0)
-
-      // Ground plane fill (dark stone)
-      const groundG = ctx.createLinearGradient(lx, groundY - 10, lx, groundY + H * 0.4)
-      groundG.addColorStop(0,   'rgba(14,9,4,0.0)')
-      groundG.addColorStop(0.08,'rgba(14,9,4,0.85)')
-      groundG.addColorStop(0.3, 'rgba(8,5,2,0.98)')
-      groundG.addColorStop(1,   '#050302')
-      ctx.fillStyle = groundG
-      ctx.fillRect(-50, groundY - 10, W + 100, H * 0.5)
-
-      // Warm light pool on ground directly below lantern
-      const lightPool = ctx.createRadialGradient(lx, groundY, 0, lx, groundY, W * 0.28 * fs)
-      lightPool.addColorStop(0,   `rgba(200,140,40,${0.22*fs})`)
-      lightPool.addColorStop(0.3, `rgba(150,90,20,${0.12*fs})`)
-      lightPool.addColorStop(0.7, `rgba(100,55,10,${0.05*fs})`)
-      lightPool.addColorStop(1,   'transparent')
-      ctx.fillStyle = lightPool
-      ctx.beginPath()
-      ctx.ellipse(lx, groundY, W * 0.28 * fs, H * 0.07 * fs, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Draw individual cobblestones (perspective-scaled rows)
-      const stoneRows = 6
-      const stoneCols = 14
-      for (let row = 0; row < stoneRows; row++) {
-        const rowFrac = (row + 1) / stoneRows
-        const ry = groundY + rowFrac * H * 0.22
-        const rowW = W * (0.3 + rowFrac * 1.1)
-        const rowH = 8 + rowFrac * 12
-        const startX = lx - rowW / 2
-
-        for (let col = 0; col < stoneCols; col++) {
-          const sx = startX + (col / stoneCols) * rowW + (row % 2) * (rowW / stoneCols / 2)
-          const sw = (rowW / stoneCols) - 2
-          const sh = rowH - 1.5
-
-          // Stone color varies with distance from light pool
-          const dx = sx + sw/2 - lx, dy = ry - groundY
-          const dist = Math.sqrt(dx*dx + dy*dy*9) / (W * 0.25)
-          const brightness = Math.max(0, 1 - dist) * fs
-          const r = Math.floor(22 + brightness * 60)
-          const g = Math.floor(14 + brightness * 30)
-          const b = Math.floor(6  + brightness * 10)
-
-          ctx.fillStyle = `rgb(${r},${g},${b})`
-          ctx.fillRect(sx, ry - sh/2, sw, sh)
-
-          // Mortar gap (very dark line)
-          ctx.strokeStyle = 'rgba(3,2,1,0.7)'
-          ctx.lineWidth = 1
-          ctx.strokeRect(sx, ry - sh/2, sw, sh)
-        }
-      }
-
-      ctx.restore()
-    }
-
-    // ═══ DRAW: God rays from lantern ═══
-    const drawGodRays = (lx, ly, t) => {
-      const rayCount = 9
-      const rayLen = Math.max(W, H) * 0.85
-      const baseAngle = t * 0.012  // very slow rotation
-
-      ctx.save()
-      ctx.globalCompositeOperation = 'lighter'
-
-      for (let i = 0; i < rayCount; i++) {
-        const angle = baseAngle + (i / rayCount) * Math.PI * 2
-        const halfSpread = 0.045 + Math.sin(t * 0.3 + i * 1.7) * 0.018
-        const opacity = (0.022 + Math.sin(t * 0.5 + i * 2.1) * 0.012) * (0.7 + 0.3 * Math.sin(t * 1.2 + i))
-
-        const x1 = lx + Math.cos(angle - halfSpread) * rayLen
-        const y1 = ly + Math.sin(angle - halfSpread) * rayLen
-        const x2 = lx + Math.cos(angle + halfSpread) * rayLen
-        const y2 = ly + Math.sin(angle + halfSpread) * rayLen
-
-        const rayG = ctx.createLinearGradient(lx, ly, (x1+x2)/2, (y1+y2)/2)
-        rayG.addColorStop(0,   `rgba(255,220,120,${opacity})`)
-        rayG.addColorStop(0.35,`rgba(220,160,60,${opacity*0.45})`)
-        rayG.addColorStop(1,   'transparent')
-
-        ctx.beginPath()
-        ctx.moveTo(lx, ly)
-        ctx.lineTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.closePath()
-        ctx.fillStyle = rayG
-        ctx.fill()
-      }
-
-      ctx.globalCompositeOperation = 'source-over'
-      ctx.restore()
-    }
-
-    // ═══ DRAW: Lantern ambient glow ═══
-    const drawGlow = (lx, ly, fs) => {
-      // Wide outer warmth halo
-      const og = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.min(W,H) * 0.60 * fs)
-      og.addColorStop(0,   `rgba(200,120,30,${0.22*fs})`)
-      og.addColorStop(0.3, `rgba(160,80,15,${0.12*fs})`)
-      og.addColorStop(0.7, `rgba(100,50,8,${0.05*fs})`)
-      og.addColorStop(1,   'transparent')
-      ctx.fillStyle = og
-      ctx.beginPath()
-      ctx.ellipse(lx, ly, Math.min(W,H)*0.60*fs, Math.min(W,H)*0.72*fs, 0, 0, Math.PI*2)
-      ctx.fill()
-
-      // Inner intense bloom
-      const ig = ctx.createRadialGradient(lx, ly, 0, lx, ly, 110 * fs)
-      ig.addColorStop(0,    `rgba(255,248,200,${0.65*fs})`)
-      ig.addColorStop(0.18, `rgba(255,210,80,${0.40*fs})`)
-      ig.addColorStop(0.55, `rgba(220,130,30,${0.15*fs})`)
-      ig.addColorStop(1,    'transparent')
-      ctx.fillStyle = ig
-      ctx.beginPath(); ctx.arc(lx, ly, 110*fs, 0, Math.PI*2); ctx.fill()
-
-      // Corona ring (sharp-edged gleam at the lantern body)
-      ctx.globalAlpha = 0.18 * fs
-      ctx.fillStyle = 'rgba(255,240,160,1)'
-      ctx.beginPath(); ctx.arc(lx, ly, 10*fs, 0, Math.PI*2); ctx.fill()
-      ctx.globalAlpha = 1
-    }
-
-    // ═══ DRAW: Detailed wrought-iron lantern (hexagonal, ~220px tall) ═══
-    const drawLantern = (lx, ly) => {
-      // Scale lantern to canvas height — it should be ~36% of H, min 120px
-      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
-      const lh = 220 * SCALE   // total lantern body height
-      const lw = 64  * SCALE   // half-width at widest
-      const top = ly - lh * 0.5
-      const bot = ly + lh * 0.5
-      const chainLen = lh * 0.55  // chain above top
-
-      // ── Hanging chain / mount ──
-      ctx.save()
-      ctx.strokeStyle = 'rgba(180,145,60,0.55)'
-      ctx.lineWidth = 1.5 * SCALE
-      // Decorative bracket arms
-      ctx.beginPath()
-      ctx.moveTo(lx - 18*SCALE, top - chainLen * 0.28)
-      ctx.quadraticCurveTo(lx - 10*SCALE, top - chainLen * 0.08, lx, top - chainLen*0.0)
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.moveTo(lx + 18*SCALE, top - chainLen * 0.28)
-      ctx.quadraticCurveTo(lx + 10*SCALE, top - chainLen * 0.08, lx, top - chainLen*0.0)
-      ctx.stroke()
-
-      // Chain links (dashed)
-      ctx.setLineDash([3*SCALE, 2.5*SCALE])
-      ctx.strokeStyle = 'rgba(200,162,65,0.45)'
-      ctx.lineWidth = 1.2 * SCALE
-      ctx.beginPath(); ctx.moveTo(lx, top - chainLen); ctx.lineTo(lx, top); ctx.stroke()
-      ctx.setLineDash([])
-
-      // Wall mount circle
-      ctx.fillStyle = 'rgba(180,145,60,0.5)'
-      ctx.beginPath(); ctx.arc(lx, top - chainLen, 5*SCALE, 0, Math.PI*2); ctx.fill()
-      ctx.restore()
-
-      // ── Pointed roof cap (pyramid-hex) ──
-      const roofBot = top + 14 * SCALE
-      ctx.save()
-      ctx.fillStyle = '#1a1106'
-      ctx.strokeStyle = 'rgba(220,175,65,0.82)'
-      ctx.lineWidth = 1.4 * SCALE
-      // Main roof pyramid
-      ctx.beginPath()
-      ctx.moveTo(lx, top - 20 * SCALE)            // peak
-      ctx.lineTo(lx - lw * 0.55, roofBot)
-      ctx.lineTo(lx - lw * 0.82, roofBot - 6*SCALE)
-      ctx.lineTo(lx + lw * 0.82, roofBot - 6*SCALE)
-      ctx.lineTo(lx + lw * 0.55, roofBot)
-      ctx.closePath(); ctx.fill(); ctx.stroke()
-
-      // Roof finial ball at peak
-      ctx.fillStyle = 'rgba(220,175,65,0.9)'
-      ctx.beginPath(); ctx.arc(lx, top - 22*SCALE, 4*SCALE, 0, Math.PI*2); ctx.fill()
-      ctx.strokeStyle = 'rgba(255,220,100,0.6)'
-      ctx.lineWidth = 0.8*SCALE
-      ctx.stroke()
-
-      // Decorative roof ribs (6 ribs from peak to edge)
-      ctx.strokeStyle = 'rgba(200,160,55,0.40)'
-      ctx.lineWidth = 0.8 * SCALE
-      for (let i = 0; i < 6; i++) {
-        const frac = (i + 0.5) / 6
-        const ex = lx + (frac - 0.5) * 2 * lw * 0.85
-        ctx.beginPath()
-        ctx.moveTo(lx, top - 20*SCALE)
-        ctx.lineTo(ex, roofBot); ctx.stroke()
-      }
-      ctx.restore()
-
-      // ── Hexagonal body frame ──
-      const bodyTop = roofBot
-      const bodyBot = bot - 12*SCALE
-      const bodyH   = bodyBot - bodyTop
-
-      ctx.save()
-      // Body glass panels fill (warm amber glow)
-      const bodyGrad = ctx.createLinearGradient(lx - lw, bodyTop, lx + lw, bodyTop)
-      bodyGrad.addColorStop(0,   'rgba(40,20,5,0.92)')
-      bodyGrad.addColorStop(0.5, 'rgba(90,50,10,0.85)')
-      bodyGrad.addColorStop(1,   'rgba(40,20,5,0.92)')
-      ctx.fillStyle = bodyGrad
-
-      // Hexagonal body path (6 side columns)
-      ctx.beginPath()
-      ctx.moveTo(lx - lw * 0.92, bodyTop)
-      ctx.lineTo(lx - lw,        bodyTop + bodyH * 0.12)
-      ctx.lineTo(lx - lw,        bodyTop + bodyH * 0.88)
-      ctx.lineTo(lx - lw * 0.92, bodyBot)
-      ctx.lineTo(lx + lw * 0.92, bodyBot)
-      ctx.lineTo(lx + lw,        bodyTop + bodyH * 0.88)
-      ctx.lineTo(lx + lw,        bodyTop + bodyH * 0.12)
-      ctx.lineTo(lx + lw * 0.92, bodyTop)
-      ctx.closePath()
-      ctx.fill()
-
-      // Outer body border
-      ctx.strokeStyle = 'rgba(220,175,65,0.80)'
-      ctx.lineWidth = 1.8 * SCALE
-      ctx.stroke()
-
-      // Inner body border (inset)
-      ctx.strokeStyle = 'rgba(200,155,55,0.28)'
-      ctx.lineWidth = 0.7 * SCALE
-      ctx.strokeRect(lx - lw * 0.85, bodyTop + bodyH*0.04, lw*1.70, bodyH*0.92)
-
-      // Vertical iron bars (4 bars)
-      ctx.strokeStyle = 'rgba(190,150,50,0.65)'
-      ctx.lineWidth = 1.6 * SCALE
-      ;[-lw * 0.55, -lw * 0.18, lw * 0.18, lw * 0.55].forEach(ox => {
-        ctx.beginPath()
-        ctx.moveTo(lx + ox, bodyTop); ctx.lineTo(lx + ox, bodyBot); ctx.stroke()
-      })
-
-      // Horizontal cross-bars (3)
-      ctx.lineWidth = 1.2 * SCALE
-      ctx.strokeStyle = 'rgba(190,150,50,0.55)'
-      ;[0.28, 0.52, 0.76].forEach(frac => {
-        const by = bodyTop + bodyH * frac
-        ctx.beginPath(); ctx.moveTo(lx - lw, by); ctx.lineTo(lx + lw, by); ctx.stroke()
-      })
-
-      // Rivet dots at intersections
-      ctx.fillStyle = 'rgba(220,180,70,0.70)'
-      ;[-lw*0.55, -lw*0.18, lw*0.18, lw*0.55].forEach(ox => {
-        ;[0.28, 0.52, 0.76].forEach(frac => {
-          ctx.beginPath()
-          ctx.arc(lx + ox, bodyTop + bodyH * frac, 2.2*SCALE, 0, Math.PI*2)
-          ctx.fill()
-        })
-      })
-
-      // Corner body rivets (large)
-      ctx.fillStyle = 'rgba(220,180,70,0.80)'
-      ;[[-lw*0.92, bodyTop], [lw*0.92, bodyTop], [-lw*0.92, bodyBot], [lw*0.92, bodyBot]].forEach(([rx, ry]) => {
-        ctx.beginPath(); ctx.arc(lx + rx, ry, 3.5*SCALE, 0, Math.PI*2); ctx.fill()
-      })
-
-      // Decorative filigree scrollwork on side panels
-      ctx.strokeStyle = 'rgba(200,155,55,0.22)'
-      ctx.lineWidth = 0.6 * SCALE
-      const midY = bodyTop + bodyH * 0.5
-      ;[-lw*0.75, lw*0.75].forEach(ox => {
-        // S-curve scroll
-        ctx.beginPath()
-        ctx.moveTo(lx + ox, midY - bodyH*0.14)
-        ctx.bezierCurveTo(
-          lx + ox + 8*SCALE, midY - bodyH*0.07,
-          lx + ox - 8*SCALE, midY + bodyH*0.07,
-          lx + ox, midY + bodyH*0.14
-        )
-        ctx.stroke()
-      })
-
-      ctx.restore()
-
-      // ── Base cap (lantern bottom) ──
-      ctx.save()
-      ctx.fillStyle = '#1a1106'
-      ctx.strokeStyle = 'rgba(220,175,65,0.80)'
-      ctx.lineWidth = 1.5 * SCALE
-
-      ctx.beginPath()
-      ctx.moveTo(lx - lw*0.92, bodyBot)
-      ctx.lineTo(lx - lw*0.55, bodyBot + 10*SCALE)
-      ctx.lineTo(lx - lw*0.22, bodyBot + 14*SCALE)
-      ctx.lineTo(lx,           bodyBot + 16*SCALE)
-      ctx.lineTo(lx + lw*0.22, bodyBot + 14*SCALE)
-      ctx.lineTo(lx + lw*0.55, bodyBot + 10*SCALE)
-      ctx.lineTo(lx + lw*0.92, bodyBot)
-      ctx.closePath(); ctx.fill(); ctx.stroke()
-
-      // Hanging ball finial at bottom
-      const ballY = bot + 8*SCALE
-      const ballR = 7*SCALE
-      const ballG = ctx.createRadialGradient(lx - 1.5*SCALE, ballY - 2*SCALE, 1, lx, ballY, ballR)
-      ballG.addColorStop(0,   'rgba(255,230,120,0.95)')
-      ballG.addColorStop(0.4, 'rgba(200,155,55,0.90)')
-      ballG.addColorStop(1,   'rgba(120,80,20,0.85)')
-      ctx.fillStyle = ballG
-      ctx.beginPath(); ctx.arc(lx, ballY, ballR, 0, Math.PI*2); ctx.fill()
-      ctx.strokeStyle = 'rgba(240,195,75,0.7)'
-      ctx.lineWidth = 0.8*SCALE
-      ctx.stroke()
-
-      // Thin rod connecting body to ball
-      ctx.strokeStyle = 'rgba(200,155,55,0.55)'
-      ctx.lineWidth = 1.2*SCALE
-      ctx.beginPath(); ctx.moveTo(lx, bodyBot + 16*SCALE); ctx.lineTo(lx, ballY - ballR); ctx.stroke()
-
-      ctx.restore()
-    }
-
-    // ═══ DRAW: Animated flame (inside lantern body) ═══
-    const drawFlame = (lx, ly, fx, fs) => {
-      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
-      const lh = 220 * SCALE
-      const top = ly - lh * 0.5
-      const roofBot = top + 14 * SCALE
-      const flameBase = ly + 2 * SCALE  // middle of body
-      const fh = 42 * SCALE * fs
-      const fw = 13 * SCALE * fs
-      const tx = lx + fx * 0.7
-
-      // Clip flame to lantern body area so it doesn't overflow
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(lx - 62*SCALE, roofBot + 10*SCALE, 124*SCALE, lh * 0.80)
-      ctx.clip()
-
-      // Layer 1: Outer amber flame
-      ctx.beginPath()
-      ctx.moveTo(lx, flameBase + fh*0.42)
-      ctx.bezierCurveTo(lx - fw*1.1, flameBase, lx - fw*0.8, flameBase - fh*0.4, tx - fw*0.3, flameBase - fh)
-      ctx.bezierCurveTo(tx, flameBase - fh*1.28, tx + fw*0.3, flameBase - fh*0.7, lx + fw*1.1, flameBase)
-      ctx.bezierCurveTo(lx + fw*1.1, flameBase + fh*0.25, lx + fw*0.4, flameBase + fh*0.42, lx, flameBase + fh*0.42)
-      const og = ctx.createLinearGradient(lx, flameBase + fh*0.42, lx, flameBase - fh*1.28)
-      og.addColorStop(0,   `rgba(160,60,5,${0.92*fs})`)
-      og.addColorStop(0.3, `rgba(230,140,20,${0.95*fs})`)
-      og.addColorStop(0.75,`rgba(255,210,80,${0.88*fs})`)
-      og.addColorStop(1,   `rgba(255,255,200,${0.60*fs})`)
-      ctx.fillStyle = og; ctx.fill()
-
-      // Layer 2: Mid orange-yellow core
-      ctx.beginPath()
-      ctx.moveTo(lx, flameBase + fh*0.28)
-      ctx.bezierCurveTo(lx - fw*0.65, flameBase, lx - fw*0.5, flameBase - fh*0.32, tx - fw*0.18, flameBase - fh*0.85)
-      ctx.bezierCurveTo(tx, flameBase - fh*1.10, tx + fw*0.18, flameBase - fh*0.55, lx + fw*0.65, flameBase)
-      ctx.bezierCurveTo(lx + fw*0.65, flameBase + fh*0.18, lx + fw*0.25, flameBase + fh*0.28, lx, flameBase + fh*0.28)
-      const mg2 = ctx.createLinearGradient(lx, flameBase + fh*0.28, lx, flameBase - fh*1.10)
-      mg2.addColorStop(0,   `rgba(255,175,30,${0.96*fs})`)
-      mg2.addColorStop(0.5, `rgba(255,235,120,${0.98*fs})`)
-      mg2.addColorStop(1,   `rgba(255,255,230,${0.80*fs})`)
-      ctx.fillStyle = mg2; ctx.fill()
-
-      // Layer 3: White hot core
-      ctx.beginPath()
-      ctx.moveTo(lx, flameBase + fh*0.14)
-      ctx.bezierCurveTo(lx - fw*0.28, flameBase, lx - fw*0.22, flameBase - fh*0.20, tx - fw*0.06, flameBase - fh*0.58)
-      ctx.bezierCurveTo(tx, flameBase - fh*0.78, tx + fw*0.06, flameBase - fh*0.42, lx + fw*0.28, flameBase)
-      ctx.bezierCurveTo(lx + fw*0.28, flameBase + fh*0.08, lx + fw*0.12, flameBase + fh*0.14, lx, flameBase + fh*0.14)
-      const cg = ctx.createLinearGradient(lx, flameBase + fh*0.14, lx, flameBase - fh*0.78)
-      cg.addColorStop(0,   `rgba(255,220,80,${0.95*fs})`)
-      cg.addColorStop(0.4, `rgba(255,252,200,${0.98*fs})`)
-      cg.addColorStop(1,   `rgba(255,255,255,${0.92*fs})`)
-      ctx.fillStyle = cg; ctx.fill()
-
-      ctx.restore()
-    }
-
-    // ═══ DRAW: Pixel-art character silhouette ═══
-    const drawCharacter = (lx, ly, t) => {
-      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
-      const lh = 220 * SCALE
-      const groundY = ly + lh * 0.5 + H * 0.32 * 0.5  // approximate ground
-      const charH = 52 * SCALE
-      const bob = Math.sin(t * 1.1) * 2  // idle breathing bob
-      const cx = lx - lh * 0.85  // character stands to the left of lantern
-      const cy = groundY - charH + bob
-
-      ctx.save()
-      ctx.fillStyle = 'rgba(6,4,10,0.95)'  // near-black silhouette
-
-      const px = SCALE * 4  // pixel unit
-
-      // Head
-      ctx.fillRect(cx - px*1.5, cy, px*3, px*3.5)
-      // Neck
-      ctx.fillRect(cx - px*0.5, cy + px*3.5, px, px)
-      // Torso
-      ctx.fillRect(cx - px*2, cy + px*4.5, px*4, px*5.5)
-      // Left shoulder/arm
-      ctx.fillRect(cx - px*3.5, cy + px*4.5, px*1.5, px*1.2)
-      ctx.fillRect(cx - px*3.2, cy + px*5.7, px, px*3.5)
-      // Right shoulder/arm (raised slightly — holding lantern pole)
-      ctx.fillRect(cx + px*2, cy + px*4.5, px*1.5, px*1.2)
-      ctx.fillRect(cx + px*2.2, cy + px*5.7, px, px*3.0)
-      // Cloak / lower body
-      ctx.beginPath()
-      ctx.moveTo(cx - px*2.5, cy + px*10)
-      ctx.lineTo(cx - px*3.2, cy + px*14)
-      ctx.lineTo(cx + px*3.2, cy + px*14)
-      ctx.lineTo(cx + px*2.5, cy + px*10)
-      ctx.closePath(); ctx.fill()
-      // Left leg
-      ctx.fillRect(cx - px*1.8, cy + px*10, px*1.4, px*3.5)
-      // Right leg (step forward)
-      ctx.fillRect(cx + px*0.4, cy + px*10, px*1.4, px*4.2)
-
-      // Rim light from lantern (very faint warm edge)
-      ctx.globalAlpha = 0.18
-      ctx.fillStyle = 'rgba(240,180,60,0.6)'
-      // Right rim
-      ctx.fillRect(cx + px*2, cy, px*0.5, charH)
-      ctx.globalAlpha = 1
-
-      // Cast shadow on ground
-      ctx.globalAlpha = 0.35
-      ctx.fillStyle = 'rgba(4,2,1,0.7)'
-      ctx.save()
-      ctx.transform(1, 0, 0.4, 0.12, 0, 0)
-      ctx.fillRect(cx - px*3, groundY * 1.2 - 5, px*6, px*1.5)
-      ctx.restore()
-      ctx.globalAlpha = 1
-
-      ctx.restore()
-    }
-
-    // ═══ DRAW: Octopath chapter card (enhanced with Roman numerals + proximity) ═══
-    const drawCard = (cx, cy, card, isHov, wobble, lanternX, lanternY) => {
-      const cw = Math.min(W*0.32, 155), ch = Math.round(cw*0.58)
-      const x0 = cx - cw/2, y0 = cy - ch/2 + wobble
-      const pulse = 0.5 + 0.5*Math.sin(t*1.7 + card.id.charCodeAt(0))
-
-      // Proximity brightness: cards closer to lantern glow brighter
-      const dx = cx - lanternX, dy = cy - wobble - lanternY
-      const dist = Math.sqrt(dx*dx + dy*dy)
-      const proxFactor = Math.max(0.3, 1 - dist / (Math.max(W,H) * 0.55))
-
-      // Card fill
-      ctx.fillStyle = isHov ? 'rgba(38,22,8,0.98)' : 'rgba(10,6,2,0.93)'
-      ctx.fillRect(x0, y0, cw, ch)
-
-      // Outer border (brightness from proximity)
-      const bOp = isHov ? 0.88+pulse*0.12 : 0.28 + proxFactor * 0.38
-      ctx.strokeStyle = `rgba(230,195,80,${bOp})`
-      ctx.lineWidth = isHov ? 1.6 : 0.9
-      ctx.strokeRect(x0+1.5, y0+1.5, cw-3, ch-3)
-
-      // Inner inset border
-      ctx.strokeStyle = `rgba(200,168,75,${isHov ? 0.30 : 0.08+proxFactor*0.14})`
-      ctx.lineWidth = 0.6
-      ctx.strokeRect(x0+4.5, y0+4.5, cw-9, ch-9)
-
-      // Center divider line with diamond (Octopath signature)
-      const midX = x0 + cw/2
-      const divY = y0 + ch*0.58
-      ctx.strokeStyle = `rgba(200,168,75,${isHov ? 0.45 : 0.15+proxFactor*0.20})`
-      ctx.lineWidth = 0.6
-      ctx.beginPath(); ctx.moveTo(x0+8, divY); ctx.lineTo(x0+cw-8, divY); ctx.stroke()
-      // Center diamond on divider
-      ctx.fillStyle = `rgba(220,185,75,${isHov ? 0.85 : 0.35+proxFactor*0.35})`
-      ctx.save(); ctx.translate(midX, divY); ctx.rotate(Math.PI/4)
-      ctx.fillRect(-2.5,-2.5,5,5); ctx.restore()
-
-      // Corner diamonds (classic Octopath window decoration)
-      const dOp = isHov ? 0.92 : 0.35 + proxFactor * 0.42
-      ctx.fillStyle = `rgba(230,195,80,${dOp})`
-      ;[[x0+2.5,y0+2.5],[x0+cw-2.5,y0+2.5],[x0+2.5,y0+ch-2.5],[x0+cw-2.5,y0+ch-2.5]].forEach(([bx,by]) => {
-        ctx.save(); ctx.translate(bx,by); ctx.rotate(Math.PI/4)
-        ctx.fillRect(-2.2,-2.2,4.4,4.4); ctx.restore()
-      })
-
-      // Hover lift inner glow
-      if (isHov) {
-        const ig = ctx.createRadialGradient(cx, cy+wobble, 0, cx, cy+wobble, cw*0.68)
-        ig.addColorStop(0,  `rgba(190,130,35,${0.16+pulse*0.10})`)
-        ig.addColorStop(1,  'transparent')
-        ctx.fillStyle = ig; ctx.fillRect(x0, y0, cw, ch)
-      }
-
-      // Roman numeral (top-left corner)
-      ctx.font = `bold ${Math.round(8+cw*0.04)}px "Cinzel", serif`
-      ctx.textAlign = 'left'
-      ctx.fillStyle = isHov ? 'rgba(255,230,120,0.75)' : `rgba(200,168,75,${0.25+proxFactor*0.35})`
-      ctx.fillText(card.roman, x0+8, y0+15)
-
-      // Icon (top-center, above divider)
-      const ix = cx, iy = y0 + ch*0.32
-      ctx.strokeStyle = isHov ? 'rgba(240,208,100,0.88)' : `rgba(200,168,75,${0.40+proxFactor*0.35})`
-      ctx.fillStyle   = isHov ? 'rgba(240,208,100,0.20)' : `rgba(200,168,75,${0.06+proxFactor*0.08})`
-      ctx.lineWidth   = 1.0
-      if (card.id === 'profile') {
-        ctx.beginPath(); ctx.arc(ix, iy-4, 5.5, 0, Math.PI*2); ctx.fill(); ctx.stroke()
-        ctx.beginPath(); ctx.moveTo(ix-8,iy+9); ctx.quadraticCurveTo(ix,iy+2,ix+8,iy+9); ctx.stroke()
-      } else if (card.id === 'skills') {
-        for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.beginPath();ctx.moveTo(ix+Math.cos(a)*4.5,iy+Math.sin(a)*4.5);ctx.lineTo(ix+Math.cos(a)*12,iy+Math.sin(a)*12);ctx.stroke()}
-        ctx.beginPath();ctx.arc(ix,iy,4.5,0,Math.PI*2);ctx.fill();ctx.stroke()
-      } else if (card.id === 'quests') {
-        ctx.beginPath();ctx.arc(ix,iy,11,0,Math.PI*2);ctx.stroke()
-        ctx.beginPath();ctx.moveTo(ix,iy-11);ctx.lineTo(ix,iy+11);ctx.moveTo(ix-11,iy);ctx.lineTo(ix+11,iy);ctx.stroke()
-        ctx.fillStyle = isHov ? 'rgba(240,208,100,0.88)' : `rgba(200,168,75,${0.42+proxFactor*0.38})`
-        ctx.beginPath();ctx.moveTo(ix,iy-11);ctx.lineTo(ix-3.5,iy-3.5);ctx.lineTo(ix+3.5,iy-3.5);ctx.closePath();ctx.fill()
-        ctx.beginPath();ctx.arc(ix,iy,2.8,0,Math.PI*2);ctx.fill()
-      } else {
-        ;[5,9,13].forEach(r=>{
-          ctx.beginPath();ctx.arc(ix-2,iy+4,r,-Math.PI*0.75,-Math.PI*0.05)
-          ctx.strokeStyle=isHov?`rgba(240,208,100,${0.92-r/17})`:`rgba(200,168,75,${(0.42+proxFactor*0.35)-r/30})`
-          ctx.stroke()
-        })
-        ctx.fillStyle=isHov?'rgba(240,208,100,0.92)':`rgba(200,168,75,${0.42+proxFactor*0.38})`
-        ctx.beginPath();ctx.arc(ix-2,iy+4,2.8,0,Math.PI*2);ctx.fill()
-      }
-
-      // Title label (below divider)
-      ctx.font = `bold ${Math.round(8.5+cw*0.028)}px "Cinzel", serif`
-      ctx.textAlign = 'center'
-      ctx.fillStyle = isHov ? '#F0D070' : `rgba(210,178,80,${0.55+proxFactor*0.35})`
-      ctx.shadowColor = isHov ? '#F0D070' : 'transparent'
-      ctx.shadowBlur  = isHov ? 12 : 0
-      ctx.fillText(card.label, cx, y0+ch*0.76)
-      ctx.shadowBlur = 0
-
-      // Sub-label
-      ctx.font = `${Math.round(10+cw*0.02)}px "VT323", monospace`
-      ctx.fillStyle = isHov ? 'rgba(240,208,112,0.58)' : `rgba(200,168,75,${0.20+proxFactor*0.22})`
-      ctx.fillText(card.sub, cx, y0+ch*0.91)
-    }
-
-    // ═══ DRAW: Film grain overlay ═══
-    const drawGrain = () => {
-      grainTick.current++
-      if (grainTick.current % 6 === 0) buildGrain()
-      if (!grainRef.current) return
-      ctx.save()
-      ctx.globalAlpha = 0.022
-      ctx.globalCompositeOperation = 'overlay'
-      // Tile grain canvas across full canvas (it's 256×256)
-      for (let gx = 0; gx < W; gx += 256) {
-        for (let gy = 0; gy < H; gy += 256) {
-          ctx.drawImage(grainRef.current, gx, gy)
-        }
-      }
-      ctx.globalCompositeOperation = 'source-over'
-      ctx.globalAlpha = 1
-      ctx.restore()
-    }
-
-    // ═══ MAIN FRAME LOOP ═══
-    const frame = () => {
-      t += 0.016
-      ctx.clearRect(0, 0, W, H)
-
-      const mx = mouseRef.current.x
-      const my = mouseRef.current.y
-
-      // Lantern position (center-right area, shifts slightly with mouse)
-      const lx = W * 0.5 + (mx - 0.5) * -25
-      const ly = H * 0.42 + (my - 0.5) * -18
-
-      // Flame flicker (4-frequency noise)
-      const fx = Math.sin(t*4.1)*2.5 + Math.sin(t*6.8)*1.2 + Math.sin(t*11.5)*0.6 + Math.sin(t*17.3)*0.3
-      const fs = 0.90 + 0.055*Math.sin(t*4.3) + 0.038*Math.sin(t*9.8) + 0.012*Math.sin(t*19.1)
-
-      // ── Layer 1: Background (far silhouettes + vignette) ──
-      drawBg(mx, my)
-
-      // ── Layer 2: Far bokeh (slowest, largest, faintest) ──
-      const farParX = (mx - 0.5) * -40
-      const farParY = (my - 0.5) * -20
-      farBokeh.forEach(p => {
-        p.y -= p.vy; p.x += p.vx + Math.sin(t*0.15+p.ph)*0.02
-        if (p.y + p.r < 0) { p.y = H + p.r; p.x = Math.random()*W }
-        const op = p.op * (0.7 + 0.3*Math.sin(t*0.4+p.ph))
-        ctx.globalAlpha = op
-        ctx.fillStyle = p.col
-        ctx.beginPath(); ctx.arc(p.x + farParX, p.y + farParY, p.r, 0, Math.PI*2); ctx.fill()
-        ctx.globalAlpha = op * 0.06
-        ctx.beginPath(); ctx.arc(p.x + farParX, p.y + farParY, p.r * 2.8, 0, Math.PI*2); ctx.fill()
-        ctx.globalAlpha = 1
-      })
-
-      // ── Layer 3: God rays (behind lantern) ──
-      drawGodRays(lx, ly, t)
-
-      // ── Layer 4: Mid bokeh particles ──
-      const midParX = (mx - 0.5) * -50
-      const midParY = (my - 0.5) * -28
-      bokeh.forEach(p => {
-        p.y -= p.vy; p.x += p.vx + Math.sin(t*0.22+p.ph)*0.035
-        if (p.y + p.r < 0) { p.y = H + p.r; p.x = Math.random()*W }
-        const op = p.op*(0.72+0.28*Math.sin(t*0.55+p.ph))
-        ctx.globalAlpha = op
-        ctx.fillStyle = p.col
-        ctx.beginPath(); ctx.arc(p.x + midParX, p.y + midParY, p.r, 0, Math.PI*2); ctx.fill()
-        if (p.r > 4) {
-          ctx.globalAlpha = op * 0.10
-          ctx.beginPath(); ctx.arc(p.x + midParX, p.y + midParY, p.r*2.4, 0, Math.PI*2); ctx.fill()
-        }
-        ctx.globalAlpha = 1
-      })
-
-      // ── Layer 5: Cobblestone ground ──
-      drawGround(lx, ly, fs)
-
-      // ── Layer 6: Compute card hit areas + positions ──
-      const newHit = {}
-      const cards = CARDS.map((c, i) => {
-        const wb = Math.sin(t * 1.25 + i * 1.15) * 5
-        const cx_ = W/2 + c.ix*W, cy_ = H/2 + c.iy*H
-        const cw = Math.min(W*0.32, 155), ch = Math.round(cw*0.58)
-        newHit[c.id] = { x:cx_, y:cy_+wb, w:cw, h:ch }
-        return { ...c, cx:cx_, cy:cy_, wb }
-      })
-      hitRef.current = newHit
-
-      // ── Layer 7: Warm light threads (lantern → cards) ──
-      cards.forEach(c => {
-        const isHov = hovRef.current === c.id
-        const tg = ctx.createLinearGradient(lx, ly, c.cx, c.cy + c.wb)
-        tg.addColorStop(0, `rgba(200,168,75,${isHov ? 0.26 : 0.07})`)
-        tg.addColorStop(1, 'rgba(200,168,75,0)')
-        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(c.cx, c.cy + c.wb)
-        ctx.strokeStyle = tg; ctx.lineWidth = isHov ? 0.9 : 0.38; ctx.stroke()
-      })
-
-      // ── Layer 8: Lantern ambient glow ──
-      drawGlow(lx, ly, fs)
-
-      // ── Layer 9: Ember particles (rise from flame) ──
-      const SCALE = Math.max(0.55, Math.min(1.0, H / 520))
-      const flameBase = ly + 2*SCALE
-      embers.forEach(e => {
-        e.life += 0.008 + Math.random()*0.004
-        if (e.life > e.maxLife) {
-          e.life = 0; e.maxLife = 0.7+Math.random()*1.2
-          e.x = lx + (Math.random()-0.5)*10*SCALE
-          e.y = flameBase
-          e.vx = (Math.random()-0.5)*0.55
-          e.vy = -(0.45+Math.random()*0.9)
-          e.sz = 0.7+Math.random()*1.3
-        }
-        e.x += e.vx + Math.sin(t*2.8+e.ph)*0.22
-        e.y += e.vy
-        e.vx *= 0.985
-        const lifeFrac = e.life / e.maxLife
-        const op = Math.max(0, Math.sin(lifeFrac * Math.PI)) * 0.75
-        ctx.globalAlpha = op
-        ctx.fillStyle = lifeFrac < 0.5 ? '#FFE090' : '#FF8822'
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.sz * (1 - lifeFrac * 0.4), 0, Math.PI*2); ctx.fill()
-        ctx.globalAlpha = 1
-      })
-
-      // ── Layer 10: Firefly motes ──
-      motes.forEach(m => {
-        m.ang += m.spd
-        const mx2 = lx + Math.cos(m.ang)*m.rad + Math.sin(t*0.42+m.ph)*16
-        const my2 = ly + Math.sin(m.ang)*m.rad*0.62 + Math.cos(t*0.33+m.ph)*11
-        const op = Math.max(0, 0.22 + 0.60*Math.sin(t*2.6+m.ph))
-        ctx.globalAlpha = op
-        ctx.fillStyle = '#FFFCE0'
-        ctx.beginPath(); ctx.arc(mx2, my2, m.sz, 0, Math.PI*2); ctx.fill()
-        ctx.globalAlpha = op * 0.22
-        ctx.fillStyle = '#F0D070'
-        ctx.beginPath(); ctx.arc(mx2, my2, m.sz*3.5, 0, Math.PI*2); ctx.fill()
-        ctx.globalAlpha = 1
-      })
-
-      // ── Layer 11: Chapter cards ──
-      cards.forEach(c => drawCard(c.cx, c.cy, c, hovRef.current === c.id, c.wb, lx, ly))
-
-      // ── Layer 12: Detailed lantern frame ──
-      drawLantern(lx, ly)
-
-      // ── Layer 13: Animated flame ──
-      drawFlame(lx, ly, fx, fs)
-
-      // ── Layer 14: Pixel-art character silhouette ──
-      drawCharacter(lx, ly, t)
-
-      // ── Layer 15: Film grain (topmost) ──
-      drawGrain()
-
-      rafRef.current = requestAnimationFrame(frame)
-    }
-    rafRef.current = requestAnimationFrame(frame)
-
-    // ── Mouse tracking ──
-    const onMove = e => {
-      const r = canvas.getBoundingClientRect()
-      const rawX = (e.clientX - r.left) / r.width
-      const rawY = (e.clientY - r.top) / r.height
-      mouseRef.current = { x: Math.max(0,Math.min(1,rawX)), y: Math.max(0,Math.min(1,rawY)) }
-
-      const mx = e.clientX - r.left, my = e.clientY - r.top
-      let found = null
-      Object.entries(hitRef.current).forEach(([id,a]) => {
-        if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) found = id
-      })
-      if (found !== hovRef.current) { hovRef.current = found; onHover?.(found) }
-    }
-    const onClick = e => {
-      const r = canvas.getBoundingClientRect()
-      const mx = e.clientX - r.left, my = e.clientY - r.top
-      Object.entries(hitRef.current).forEach(([id,a]) => {
-        if (mx>=a.x-a.w/2 && mx<=a.x+a.w/2 && my>=a.y-a.h/2 && my<=a.y+a.h/2) onNavigate?.(id)
-      })
-    }
-
-    canvas.addEventListener('mousemove', onMove)
-    canvas.addEventListener('click', onClick)
-    const ro = new ResizeObserver(resize); ro.observe(canvas)
-    return () => {
-      cancelAnimationFrame(rafRef.current)
-      canvas.removeEventListener('mousemove', onMove)
-      canvas.removeEventListener('click', onClick)
-      ro.disconnect()
-    }
-  }, [onNavigate, onHover])
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ width:'100%', height:'100%', display:'block', cursor:'crosshair' }}
-    />
-  )
-}
-
-// ── Dead code boundary — StainedGlassWindow body below (not rendered, kept for badge SVG ref) ──
-function StainedGlassWindow({ hoveredSection, onNavigate, onHover }) {
-  const lead = 'rgba(4,4,15,0.92)'
-  const lw   = 7
-  const hov  = hoveredSection
-  const [flashId, setFlashId] = useState(null)
-  const [rippleKey, setRippleKey] = useState(0)
-
-  const handleClick = useCallback((id) => {
-    if (flashId) return
-    setFlashId(id)
-    setRippleKey(k => k + 1)
-    onNavigate?.(id)
-    setTimeout(() => setFlashId(null), 1000)
-  }, [flashId, onNavigate])
-
-  const panelFill = (id, base) => {
-    if (flashId === id) return `${base}CC`
-    if (hov === id) return `${base}55`
-    return `${base}22`
-  }
-
-  return (
-    <div style={{ position: 'relative', width: '100%', maxWidth: 300, margin: '0 auto' }}>
-      <svg viewBox="0 0 280 380" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
-        <defs>
-          {/* Arch clip: left half */}
-          <clipPath id="sgClipTL">
-            <path d="M 26,202 C 26,102 140,26 140,26 L 140,202 Z" />
-          </clipPath>
-          {/* Arch clip: right half */}
-          <clipPath id="sgClipTR">
-            <path d="M 140,26 C 140,26 254,102 254,202 L 140,202 Z" />
-          </clipPath>
-        </defs>
-
-        {/* ── BACKGROUND ── */}
-        <path d="M 26,370 L 26,202 C 26,102 140,26 140,26 C 140,26 254,102 254,202 L 254,370 Z"
-          fill="rgba(4,4,15,0.82)" />
-
-        {/* ── PANEL FILLS ── */}
-        {/* Profile – top-left gold */}
-        <g clipPath="url(#sgClipTL)">
-          <path d="M 26,202 C 26,102 140,26 140,26 L 140,202 Z"
-            fill={panelFill('profile', '#C8A84B')}
-            style={{ transition: 'fill 0.45s' }} />
-        </g>
-        {/* Skills – top-right blue */}
-        <g clipPath="url(#sgClipTR)">
-          <path d="M 140,26 C 140,26 254,102 254,202 L 140,202 Z"
-            fill={panelFill('skills', '#4060A0')}
-            style={{ transition: 'fill 0.45s' }} />
-        </g>
-        {/* Quests – bottom-left green */}
-        <rect x={30} y={205} width={107} height={162}
-          fill={panelFill('quests', '#50A878')}
-          style={{ transition: 'fill 0.45s' }} />
-        {/* Contact – bottom-right purple */}
-        <rect x={143} y={205} width={107} height={162}
-          fill={panelFill('contact', '#7060C0')}
-          style={{ transition: 'fill 0.45s' }} />
-
-        {/* ── PANEL GLOW (hovered) ── */}
-        {hov && GLASS_CFG[hov] && (
-          <circle cx={GLASS_CFG[hov].cx} cy={GLASS_CFG[hov].cy} r={55}
-            fill={`${GLASS_CFG[hov].glow}14`}
-            style={{ filter: `blur(8px)`, transition: 'all 0.4s' }} />
-        )}
-
-        {/* ── ICONS ── */}
-        {/* Profile: warrior silhouette */}
-        <g transform="translate(83,130)" opacity={hov === 'profile' ? 1 : hov ? 0.5 : 0.75}
-          style={{ transition: 'opacity 0.35s' }}>
-          <circle r="16" fill="none" stroke="#C8A84B" strokeWidth="1.5" strokeOpacity="0.7" />
-          <ellipse cx="0" cy="-22" rx="7" ry="5.5" fill="#C8A84B" opacity="0.85" />
-          <line x1="0" y1="-16" x2="0" y2="-4" stroke="#C8A84B" strokeWidth="6" strokeOpacity="0.5" strokeLinecap="round" />
-          <path d="M -9,0 Q 0,18 9,0" fill="#C8A84B" opacity="0.55" />
-          <line x1="-13" y1="-6" x2="13" y2="-6" stroke="#C8A84B" strokeWidth="1.5" strokeOpacity="0.8" />
-        </g>
-
-        {/* Abilities: arcane rune star */}
-        <g transform="translate(197,130)" opacity={hov === 'skills' ? 1 : hov ? 0.5 : 0.75}
-          style={{ transition: 'opacity 0.35s' }}>
-          <circle r="18" fill="none" stroke="#6090D8" strokeWidth="1" strokeOpacity="0.5" />
-          <circle r="9"  fill="none" stroke="#6090D8" strokeWidth="1.5" strokeOpacity="0.9" />
-          {[0,45,90,135,180,225,270,315].map(a => (
-            <line key={a}
-              x1={Math.cos(a*Math.PI/180)*9} y1={Math.sin(a*Math.PI/180)*9}
-              x2={Math.cos(a*Math.PI/180)*17} y2={Math.sin(a*Math.PI/180)*17}
-              stroke="#6090D8" strokeWidth="1" strokeOpacity="0.8" />
-          ))}
-          <circle r="3" fill="#6090D8" opacity="0.95" />
-        </g>
-
-        {/* Quests: compass rose */}
-        <g transform="translate(83,285)" opacity={hov === 'quests' ? 1 : hov ? 0.5 : 0.75}
-          style={{ transition: 'opacity 0.35s' }}>
-          <circle r="16" fill="none" stroke="#50A878" strokeWidth="1.5" strokeOpacity="0.7" />
-          <line x1="-16" y1="0" x2="16" y2="0" stroke="#50A878" strokeWidth="1.5" strokeOpacity="0.9" />
-          <line x1="0" y1="-16" x2="0" y2="16" stroke="#50A878" strokeWidth="1.5" strokeOpacity="0.9" />
-          <polygon points="0,-13 3,-5 -3,-5" fill="#50A878" opacity="0.95" />
-          <circle r="4" fill="none" stroke="#50A878" strokeWidth="1.5" strokeOpacity="0.8" />
-          <circle r="1.5" fill="#50A878" opacity="0.9" />
-          <text textAnchor="middle" y={-19} fontSize="7" fill="#50A878" opacity="0.9"
-            style={{ fontFamily: "'Cinzel', serif" }}>N</text>
-        </g>
-
-        {/* Contact: transmission rune */}
-        <g transform="translate(197,285)" opacity={hov === 'contact' ? 1 : hov ? 0.5 : 0.75}
-          style={{ transition: 'opacity 0.35s' }}>
-          <circle r="16" fill="none" stroke="#9080D8" strokeWidth="1.5" strokeOpacity="0.7" />
-          <circle r="9"  fill="none" stroke="#9080D8" strokeWidth="1"   strokeOpacity="0.8" />
-          <circle r="3"  fill="#9080D8" opacity="0.95" />
-          {[30,90,150,210,270,330].map(a => (
-            <line key={a}
-              x1={Math.cos(a*Math.PI/180)*9}  y1={Math.sin(a*Math.PI/180)*9}
-              x2={Math.cos(a*Math.PI/180)*15} y2={Math.sin(a*Math.PI/180)*15}
-              stroke="#9080D8" strokeWidth="1.5" strokeOpacity="0.7" />
-          ))}
-        </g>
-
-        {/* ── LEAD LINES (drawn last so they sit on top) ── */}
-        <path d="M 26,370 L 26,202 C 26,102 140,26 140,26 C 140,26 254,102 254,202 L 254,370 Z"
-          fill="none" stroke={lead} strokeWidth={lw} strokeLinejoin="round" />
-        <line x1="140" y1="26"  x2="140" y2="370" stroke={lead} strokeWidth={lw} />
-        <line x1="26"  y1="202" x2="254" y2="202" stroke={lead} strokeWidth={lw} />
-        {/* Gold frame overlay */}
-        <path d="M 26,370 L 26,202 C 26,102 140,26 140,26 C 140,26 254,102 254,202 L 254,370 Z"
-          fill="none" stroke="rgba(200,168,75,0.55)" strokeWidth="1.5" strokeLinejoin="round" />
-        <line x1="140" y1="26"  x2="140" y2="370" stroke="rgba(200,168,75,0.3)" strokeWidth="1" />
-        <line x1="26"  y1="202" x2="254" y2="202" stroke="rgba(200,168,75,0.3)" strokeWidth="1" />
-
-        {/* Inner decorative panel borders */}
-        <g clipPath="url(#sgClipTL)">
-          <path d="M 30,198 C 30,108 137,30 137,30 L 137,198 Z"
-            fill="none" stroke="rgba(200,168,75,0.18)" strokeWidth="1" />
-        </g>
-        <g clipPath="url(#sgClipTR)">
-          <path d="M 143,30 C 143,30 250,108 250,198 L 143,198 Z"
-            fill="none" stroke="rgba(96,144,216,0.18)" strokeWidth="1" />
-        </g>
-        <rect x={33} y={208} width={101} height={156} fill="none" stroke="rgba(80,168,120,0.18)" strokeWidth="1" />
-        <rect x={146} y={208} width={101} height={156} fill="none" stroke="rgba(144,128,216,0.18)" strokeWidth="1" />
-
-        {/* Section labels */}
-        {[
-          { id: 'profile', x: 83,  y: 196, col: '#C8A84B', label: 'PROFILE'   },
-          { id: 'skills',  x: 197, y: 196, col: '#6090D8', label: 'ABILITIES' },
-          { id: 'quests',  x: 83,  y: 362, col: '#50A878', label: 'QUESTS'    },
-          { id: 'contact', x: 197, y: 362, col: '#9080D8', label: 'MESSAGE'   },
-        ].map(p => (
-          <text key={p.id} x={p.x} y={p.y} textAnchor="middle" fontSize="7"
-            fill={p.col} opacity={hov === p.id ? 1 : hov ? 0.4 : 0.65}
-            style={{ fontFamily: "'Cinzel', serif", letterSpacing: '0.12em', transition: 'opacity 0.35s' }}>
-            {p.label}
-          </text>
-        ))}
-
-        {/* ── CLICK RIPPLE — expanding light ring on click ── */}
-        {flashId && GLASS_CFG[flashId] && (
-          <motion.circle
-            key={rippleKey}
-            cx={GLASS_CFG[flashId].cx}
-            cy={GLASS_CFG[flashId].cy}
-            fill="none"
-            stroke={GLASS_CFG[flashId].glow}
-            initial={{ r: 0, opacity: 0.9, strokeWidth: 4 }}
-            animate={{ r: 180, opacity: 0, strokeWidth: 0.5 }}
-            transition={{ duration: 0.75, ease: 'easeOut' }}
-          />
-        )}
-
-        {/* ── CLICK TARGETS — transparent hit areas on top ── */}
-        <g clipPath="url(#sgClipTL)">
-          <path d="M 26,202 C 26,102 140,26 140,26 L 140,202 Z"
-            fill="transparent"
-            onClick={() => handleClick('profile')}
-            onMouseEnter={() => onHover?.('profile')}
-            onMouseLeave={() => onHover?.(null)}
-            style={{ cursor: 'none' }} />
-        </g>
-        <g clipPath="url(#sgClipTR)">
-          <path d="M 140,26 C 140,26 254,102 254,202 L 140,202 Z"
-            fill="transparent"
-            onClick={() => handleClick('skills')}
-            onMouseEnter={() => onHover?.('skills')}
-            onMouseLeave={() => onHover?.(null)}
-            style={{ cursor: 'none' }} />
-        </g>
-        <rect x={30} y={205} width={107} height={162}
-          fill="transparent"
-          onClick={() => handleClick('quests')}
-          onMouseEnter={() => onHover?.('quests')}
-          onMouseLeave={() => onHover?.(null)}
-          style={{ cursor: 'none' }} />
-        <rect x={143} y={205} width={107} height={162}
-          fill="transparent"
-          onClick={() => handleClick('contact')}
-          onMouseEnter={() => onHover?.('contact')}
-          onMouseLeave={() => onHover?.(null)}
-          style={{ cursor: 'none' }} />
-      </svg>
-      {/* Glass surface sheen */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 38% 28%, rgba(255,255,255,0.05), transparent 55%)', pointerEvents: 'none' }} />
-    </div>
-  )
-}
-
-// Mini stained glass badge shown in section header
-function StainedGlassBadge({ sectionId }) {
-  const cfg = GLASS_CFG[sectionId] || GLASS_CFG.profile
-  const icons = {
-    profile: <g>
-      <ellipse cx="0" cy="-7" rx="4" ry="3" fill={cfg.col} opacity="0.9" />
-      <path d="M -4,0 Q 0,6 4,0" fill={cfg.col} opacity="0.7" />
-      <line x1="-5" y1="-1" x2="5" y2="-1" stroke={cfg.col} strokeWidth="1" opacity="0.8" />
-    </g>,
-    skills: <g>
-      <circle r="5" fill="none" stroke={cfg.col} strokeWidth="1.5" />
-      {[0,60,120,180,240,300].map(a => (
-        <line key={a} x1={Math.cos(a*Math.PI/180)*5} y1={Math.sin(a*Math.PI/180)*5}
-          x2={Math.cos(a*Math.PI/180)*9} y2={Math.sin(a*Math.PI/180)*9}
-          stroke={cfg.col} strokeWidth="1" opacity="0.9" />
-      ))}
-      <circle r="2" fill={cfg.col} />
-    </g>,
-    quests: <g>
-      <circle r="8" fill="none" stroke={cfg.col} strokeWidth="1.5" />
-      <line x1="-8" y1="0" x2="8" y2="0" stroke={cfg.col} strokeWidth="1" />
-      <line x1="0" y1="-8" x2="0" y2="8" stroke={cfg.col} strokeWidth="1" />
-      <polygon points="0,-6 1.5,-2 -1.5,-2" fill={cfg.col} />
-    </g>,
-    contact: <g>
-      <circle r="8" fill="none" stroke={cfg.col} strokeWidth="1.5" />
-      <circle r="4" fill="none" stroke={cfg.col} strokeWidth="1" />
-      <circle r="1.5" fill={cfg.col} />
-    </g>,
-  }
-  return (
-    <svg width={28} height={28} viewBox="-14 -14 28 28"
-      style={{ filter: `drop-shadow(0 0 4px ${cfg.glow}66)`, flexShrink: 0 }}>
-      <rect x={-12} y={-12} width={24} height={24} rx="1"
-        fill={`${cfg.col}12`} stroke={`${cfg.col}44`} strokeWidth="1" />
-      {icons[sectionId] || icons.profile}
-    </svg>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  MAIN LANDING PAGE
-//  Full screen · Left-aligned · Animation heavy · No top nav
-// ═══════════════════════════════════════════════════════════════
-function MainPage({ onNavigate, onGlassNav }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [hoveredSection, setHoveredSection] = useState(null)
-  const typed = useTypewriter(['Backend Engineer (leveling up)', 'Clinical Systems Specialist', 'Application Support Engineer', 'Business Analyst', 'Problem Solver'])
-
-  useEffect(() => {
-    Orchestra.playMainAmbient()
-    return () => Orchestra.stopAmbient()
+    const t = setInterval(() => setRoleIdx(i => (i + 1) % roles.length), 3000)
+    return () => clearInterval(t)
   }, [])
 
-  const openMenu  = () => { setMenuOpen(true); Orchestra.menuMove() }
-  const closeMenu = () => { setMenuOpen(false); Orchestra.menuCancel(); setHoveredSection(null) }
-  const handleSelect = (id) => { setMenuOpen(false); Orchestra.transition(); onNavigate(id) }
+  const NAV = [
+    { id: 'about',    label: 'About',    sub: 'Background & Story',      num: '01' },
+    { id: 'skills',   label: 'Skills',   sub: 'Stack & Expertise',       num: '02' },
+    { id: 'projects', label: 'Projects', sub: 'Work & Builds',           num: '03' },
+    { id: 'contact',  label: 'Contact',  sub: 'Let\'s Talk',             num: '04' },
+  ]
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      transition={{ duration: 1.2, ease: 'easeOut' }}
-      style={{ position: 'fixed', inset: 0, background: C.black, overflow: 'hidden' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      style={{ position: 'fixed', inset: 0, background: C.bg, display: 'flex' }}
     >
-      <LightBeams opacity={0.7} />
-      <CrystalDust count={70} />
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,8,0.7) 100%)', pointerEvents: 'none', zIndex: 2 }} />
+      {/* Grid background */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: `linear-gradient(${C.line} 1px, transparent 1px), linear-gradient(90deg, ${C.line} 1px, transparent 1px)`,
+        backgroundSize: '80px 80px',
+        maskImage: 'radial-gradient(ellipse 80% 80% at 15% 50%, black 0%, transparent 70%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 15% 50%, black 0%, transparent 70%)',
+      }} />
 
-      {/* LEFT SIDE — Character info */}
+      {/* Accent glow — very subtle */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 50% 40% at 10% 50%, rgba(91,141,239,0.05) 0%, transparent 70%)',
+      }} />
+
+      {/* LEFT — Identity */}
       <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0,
-        width: 'clamp(320px, 45%, 560px)',
+        width: 'clamp(300px, 46%, 580px)',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: 'clamp(32px, 6vw, 80px)',
-        zIndex: 10,
-        background: 'linear-gradient(90deg, rgba(0,0,8,0.7) 0%, rgba(0,0,8,0.4) 70%, transparent 100%)',
+        padding: '80px clamp(24px, 5vw, 64px)',
+        position: 'relative', zIndex: 2,
+        borderRight: `1px solid ${C.line}`,
       }}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}`, animation: 'pulse 2s infinite' }} />
-          <span style={{ fontFamily: 'VT323, monospace', fontSize: 15, color: C.green, letterSpacing: '0.12em' }}>ONLINE · OPEN TO OPPORTUNITIES</span>
+
+        {/* Status */}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 40 }}
+        >
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}` }} />
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.green, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            Available · Open to Work
+          </span>
         </motion.div>
 
-        <motion.h1 initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          style={{ fontFamily: "'Cinzel', serif", lineHeight: 1.15, marginBottom: 8, fontWeight: 600 }}>
-          <span style={{ fontSize: 'clamp(13px, 1.6vw, 20px)', color: C.dim, display: 'block', letterSpacing: '0.14em', marginBottom: 6, textTransform: 'uppercase' }}>Hi, I'm</span>
-          <span style={{ fontSize: 'clamp(36px, 6vw, 72px)', display: 'block', color: C.goldBright, textShadow: `0 0 30px ${C.gold}55, 0 0 60px ${C.gold}22`, letterSpacing: '0.06em' }}>Mark</span>
+        {/* Name */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 'clamp(40px, 5.5vw, 72px)',
+            color: C.white, fontWeight: 800,
+            lineHeight: 1.05, letterSpacing: '-0.03em',
+            marginBottom: 20,
+          }}
+        >
+          Mark JP
         </motion.h1>
 
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.9, duration: 0.8 }}
-          style={{ fontFamily: 'VT323, monospace', fontSize: 'clamp(18px, 2.2vw, 22px)', color: C.blueLight, letterSpacing: '0.08em', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ color: C.dimmer }}>▶ </span>{typed}<span style={{ animation: 'blink 1s step-end infinite' }}>_</span>
-        </motion.div>
+        {/* Animated role */}
+        <div style={{ height: 28, overflow: 'hidden', marginBottom: 28 }}>
+          <AnimatePresence mode="wait">
+            <motion.div key={roleIdx}
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -16, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 'clamp(11px, 1.2vw, 13px)',
+                color: C.accent,
+                letterSpacing: '0.08em',
+              }}
+            >
+              {roles[roleIdx]}
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1, duration: 0.8 }}
-          style={{ width: 60, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 24 }} />
+        {/* Divider */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.5, duration: 0.6, transformOrigin: 'left', ease: [0.22, 1, 0.36, 1] }}
+          style={{ width: 40, height: 1, background: C.accent, marginBottom: 28 }}
+        />
 
-        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.8 }}
-          style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 'clamp(13px, 1.4vw, 15px)', color: C.dim, lineHeight: 1.9, marginBottom: 40, maxWidth: 440, fontWeight: 400, letterSpacing: '0.02em' }}>
-          {YEARS_EXP}+ years turning complex systems into solutions.
-          Clinical platforms, IoT systems, enterprise integrations.{' '}
-          <span style={{ color: C.goldBright }}>Now leveling into backend engineering</span> —
-          because the full stack demands to be understood.
+        {/* Bio */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 'clamp(13px, 1.3vw, 15px)',
+            color: C.textDim, lineHeight: 1.85,
+            marginBottom: 40, maxWidth: 420,
+          }}
+        >
+          {YEARS}+ years in clinical systems and enterprise integrations.
+          Now building toward backend engineering — Python, Go, Docker, Kubernetes.
+          <span style={{ color: C.text }}> The support engineer who learned to read the source.</span>
         </motion.p>
 
-        {/* MENU BUTTON — The only navigation */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4, duration: 0.6 }}>
-          <button
-            className="click"
-            onMouseEnter={() => Orchestra.menuMove()}
-            onMouseOver={e => { if (!menuOpen) { e.currentTarget.style.borderColor = C.borderBright; e.currentTarget.style.background = `${C.gold}14`; e.currentTarget.style.color = C.goldBright } }}
-            onMouseOut={e => { if (!menuOpen) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.gold } }}
-            onClick={menuOpen ? closeMenu : openMenu}
-            style={{
-              background: menuOpen ? `${C.gold}22` : 'transparent',
-              border: `1px solid ${menuOpen ? C.borderBright : C.border}`,
-              borderRadius: 2,
-              padding: '14px 32px',
-              fontFamily: "'Cinzel', serif",
-              fontSize: 'clamp(11px, 1.4vw, 13px)',
-              color: menuOpen ? C.goldBright : C.gold,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              transition: 'all 0.2s',
-              cursor: 'none',
-              display: 'flex', alignItems: 'center', gap: 10,
-              animation: menuOpen ? 'none' : 'buttonBreathe 3s ease-in-out infinite',
-            }}
-          >
-            <span style={{ fontSize: 12, opacity: 0.7 }}>{menuOpen ? '✕' : '⚔'}</span>
-            {menuOpen ? 'Close Menu' : 'Open Menu'}
-            <span style={{ fontSize: 12, opacity: 0.7 }}>{menuOpen ? '✕' : '⚔'}</span>
-          </button>
+        {/* Quick stats */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.75, duration: 0.5 }}
+          style={{ display: 'flex', gap: 32, marginBottom: 44 }}
+        >
+          {[
+            { v: `${YEARS}+`, l: 'Years' },
+            { v: '8+',        l: 'Platforms' },
+            { v: '100K+',     l: 'Target Salary' },
+          ].map(s => (
+            <div key={s.l}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, color: C.white, fontWeight: 800, lineHeight: 1 }}>{s.v}</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: C.textMute, letterSpacing: '0.1em', marginTop: 4, textTransform: 'uppercase' }}>{s.l}</div>
+            </div>
+          ))}
+        </motion.div>
 
-          <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmest, letterSpacing: '0.1em', marginTop: 10 }}>
-            or press any arrow key
-          </div>
+        {/* Social row */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.85 }}
+          style={{ display: 'flex', gap: 20 }}
+        >
+          {[
+            { label: 'GitHub',   href: 'https://github.com/markjpdev' },
+            { label: 'LinkedIn', href: 'https://linkedin.com/in/jaysonpunsalan' },
+            { label: 'Email',    href: 'mailto:mark@markjp.dev' },
+          ].map(s => (
+            <a key={s.label} href={s.href}
+              target={s.href.startsWith('mailto') ? undefined : '_blank'}
+              rel="noreferrer"
+              style={{
+                fontFamily: "'DM Mono', monospace", fontSize: 10,
+                color: C.textMute, textDecoration: 'none',
+                letterSpacing: '0.1em', transition: 'color 0.2s',
+              }}
+              onMouseOver={e => e.currentTarget.style.color = C.accent}
+              onMouseOut={e => e.currentTarget.style.color = C.textMute}
+            >{s.label}</a>
+          ))}
         </motion.div>
       </div>
 
-      {/* RIGHT SIDE — Crystal Nexus */}
-      <motion.div
-        initial={{ opacity: 0, x: 40 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.9, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%', zIndex: 5 }}
-      >
-        <LanternScene onNavigate={onGlassNav} onHover={setHoveredSection} />
-      </motion.div>
+      {/* RIGHT — Navigation menu */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', padding: '80px clamp(24px, 5vw, 64px)',
+        position: 'relative', zIndex: 2,
+      }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          style={{ marginBottom: 40 }}
+        >
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+            Navigate
+          </span>
+        </motion.div>
 
-      {/* BOTTOM STATUS BAR — Like FF's bottom info bar */}
-      <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 1.6, duration: 0.7 }}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, height: 44, background: C.bgNav, borderTop: `1px solid ${C.border}`, backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', padding: '0 clamp(16px, 4vw, 48px)', gap: 32 }}>
-        <MusicToggle />
-        <div style={{ height: '60%', width: 1, background: C.border, marginLeft: 'auto' }} />
-        {[
-          { label: 'EXP', value: `${YEARS_EXP}+ YRS` },
-          { label: 'CLASS', value: 'ENGINEER / ANALYST' },
-          { label: 'STATUS', value: 'AVAILABLE', color: C.green, pulse: true },
-          { label: 'ORIGIN', value: 'Quezon City, PH' },
-        ].map(s => (
-          <div key={s.label} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmer, letterSpacing: '0.1em' }}>{s.label}</span>
-            <span style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: s.color || C.silver, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5 }}>
-              {s.pulse && <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}`, animation: 'pulse 2s infinite', flexShrink: 0 }} />}
-              {s.value}
-            </span>
-          </div>
-        ))}
-      </motion.div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {NAV.map((item, i) => (
+            <motion.button
+              key={item.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 + i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              onClick={() => onNavigate(item.id)}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${C.line}`,
+                cursor: 'pointer', textAlign: 'left',
+                padding: 'clamp(18px, 2.5vw, 26px) clamp(20px, 3vw, 32px)',
+                display: 'flex', alignItems: 'center',
+                gap: 20, transition: 'all 0.2s',
+                position: 'relative', overflow: 'hidden',
+              }}
+              onMouseOver={e => {
+                e.currentTarget.style.borderColor = C.lineHover
+                e.currentTarget.style.background = C.bgCard
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.borderColor = C.line
+                e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.08em', width: 24, flexShrink: 0 }}>{item.num}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(18px, 2.5vw, 26px)', color: C.white, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.08em' }}>{item.sub}</div>
+              </div>
+              <span style={{ color: C.accent, fontSize: 18, opacity: 0.6, transition: 'opacity 0.2s' }}>→</span>
+            </motion.button>
+          ))}
+        </div>
 
-      {/* Menu backdrop — click outside to close */}
-      {menuOpen && (
-        <div onClick={closeMenu} style={{ position: 'fixed', inset: 0, zIndex: 190 }} />
-      )}
-
-      {/* FF MENU — slides in from left */}
-      <AnimatePresence>
-        {menuOpen && <FFMenu onSelect={handleSelect} onClose={closeMenu} onHover={setHoveredSection} />}
-      </AnimatePresence>
+        {/* Location / time indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.0 }}
+          style={{ marginTop: 40, display: 'flex', alignItems: 'center', gap: 12 }}
+        >
+          <div style={{ width: 20, height: 1, background: C.line }} />
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.1em' }}>
+            Quezon City, PH · UTC+8
+          </span>
+        </motion.div>
+      </div>
     </motion.div>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SECTION SCREENS — Full screen, FF-styled panels
-// ═══════════════════════════════════════════════════════════════
-function SectionScreen({ id, onBack }) {
-  const sections = { profile: ProfileSection, skills: SkillsSection, quests: QuestsSection, contact: ContactSection }
-  const Section = sections[id]
-
-  useEffect(() => {
-    const esc = e => { if (e.key === 'Escape') { Orchestra.menuCancel(); onBack() } }
-    window.addEventListener('keydown', esc)
-    return () => window.removeEventListener('keydown', esc)
-  }, [onBack])
-
+// ─────────────────────────────────────────────────────────
+//  SECTION SHELL — shared wrapper for all content screens
+// ─────────────────────────────────────────────────────────
+function ScreenShell({ children, onBack, title, index }) {
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.7, ease: 'easeInOut' }}
-      style={{ position: 'fixed', inset: 0, background: C.black, zIndex: 100, overflow: 'hidden' }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      style={{ position: 'fixed', inset: 0, background: C.bg, overflowY: 'auto', paddingTop: 56 }}
     >
-      <LightBeams opacity={0.5} />
-      <CrystalDust count={40} />
-      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,8,0.7) 100%)', pointerEvents: 'none', zIndex: 2 }} />
-
-      {/* Content area */}
-      <div style={{ position: 'relative', zIndex: 10, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Section header bar */}
-        <div style={{ flexShrink: 0, background: C.bgNav, borderBottom: `1px solid ${C.border}`, backdropFilter: 'blur(20px)', padding: '12px clamp(16px, 4vw, 48px)', display: 'flex', alignItems: 'center', gap: 20 }}>
-          <button className="click"
-            onMouseEnter={() => Orchestra.menuMove()}
-            onClick={() => { Orchestra.menuCancel(); onBack() }}
-            style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 2, padding: '6px 14px', fontFamily: "'Cinzel', serif", fontSize: 11, color: C.silver, letterSpacing: '0.15em', cursor: 'none', transition: 'all .2s' }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.goldBright }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.silver }}
-          >◀ RETURN</button>
-          <span style={{ fontFamily: 'VT323, monospace', fontSize: 12, color: C.dimmest, letterSpacing: '0.1em' }}>ESC</span>
-
-          <div style={{ height: 20, width: 1, background: C.border }} />
-          <StainedGlassBadge sectionId={id} />
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 13, color: GLASS_CFG[id]?.col || C.gold, letterSpacing: '0.2em', textTransform: 'uppercase', textShadow: `0 0 10px ${GLASS_CFG[id]?.glow || C.gold}55` }}>
-            {MENU_ITEMS.find(m => m.id === id)?.label}
-          </div>
-          <div style={{ marginLeft: 'auto' }}>
-            <MusicToggle />
-          </div>
-        </div>
-
-        {/* Section content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'clamp(24px, 4vw, 48px) clamp(20px, 5vw, 64px)' }}>
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7 }}>
-            {Section && <Section />}
-          </motion.div>
-        </div>
+      {/* Section header */}
+      <div style={{
+        padding: 'clamp(40px, 6vw, 72px) clamp(24px, 6vw, 80px) 0',
+        maxWidth: 1100, margin: '0 auto',
+      }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 56 }}
+        >
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.12em' }}>{index}</span>
+          <div style={{ width: 1, height: 12, background: C.line }} />
+          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, color: C.accent, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700 }}>{title}</span>
+          <div style={{ flex: 1, maxWidth: 60, height: 1, background: C.line }} />
+        </motion.div>
+        {children}
       </div>
     </motion.div>
   )
 }
 
-// Section content components
-function SectionTitle({ icon, title, sub, color = C.goldBright }) {
-  return (
-    <div style={{ marginBottom: 36 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-        <span style={{ fontSize: 18 }}>{icon}</span>
-        <span style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(18px, 3vw, 28px)', color, textShadow: `0 0 15px ${color}44`, letterSpacing: '0.08em' }}>{title}</span>
-      </div>
-      <div style={{ height: 1, background: `linear-gradient(90deg, ${color}55, transparent)`, marginBottom: 8 }} />
-      {sub && <div style={{ fontFamily: 'VT323, monospace', fontSize: 17, color: C.dimmer, letterSpacing: '0.08em' }}>{sub}</div>}
-    </div>
-  )
-}
-
-function Panel({ children, accent = C.gold, style = {} }) {
-  return (
-    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderLeft: `3px solid ${accent}55`, borderRadius: 2, padding: 'clamp(16px, 3vw, 24px)', backdropFilter: 'blur(10px)', ...style }}>
-      {children}
-    </div>
-  )
-}
-
-// ── Pixel Art Character ──────────────────────────────────────────
-function PixelCharacter() {
-  // 0=transparent 1=gold 2=gold-dark 3=silver 4=deep-blue 5=blue-armor
-  const PAL = { 1: '#C8A84B', 2: '#6A4820', 3: '#A8B8D0', 4: '#1A2850', 5: '#344E8A' }
-  const MAP = [
-    [0,0,0,1,1,1,1,1,1,0,0,0],
-    [0,0,1,1,1,1,1,1,1,1,0,0],
-    [0,0,1,3,3,3,3,3,3,1,0,0],
-    [0,0,1,3,4,4,4,4,3,1,0,0],
-    [0,0,1,1,1,1,1,1,1,1,0,0],
-    [0,1,1,5,5,1,1,5,5,1,1,0],
-    [1,1,5,5,5,5,5,5,5,5,1,1],
-    [1,5,5,5,5,5,5,5,5,5,5,1],
-    [1,5,5,5,4,4,4,5,5,5,5,1],
-    [1,5,5,2,2,2,2,2,5,5,5,1],
-    [0,1,1,5,5,0,0,5,5,1,1,0],
-    [0,0,1,5,5,0,0,5,5,1,0,0],
-    [0,0,1,5,5,0,0,5,5,1,0,0],
-    [0,0,1,4,4,0,0,4,4,1,0,0],
-    [0,0,1,4,4,0,0,4,4,1,0,0],
-    [0,0,1,1,0,0,0,0,1,1,0,0],
-  ]
-  const SZ = 5
-  return (
-    <svg width={MAP[0].length * SZ} height={MAP.length * SZ}
-      style={{ display: 'block', margin: '0 auto', animation: 'orbFloat 4s ease-in-out infinite', imageRendering: 'pixelated' }}>
-      {MAP.map((row, ri) => row.map((cell, ci) =>
-        cell ? <rect key={`${ri}-${ci}`} x={ci * SZ} y={ri * SZ} width={SZ} height={SZ} fill={PAL[cell]} /> : null
-      ))}
-    </svg>
-  )
-}
-
-// ── Profile ─────────────────────────────────────────────────────
-function ProfileSection() {
-  const [hoveredAch, setHoveredAch] = useState(null)
-  const typed = useTypewriter(['Backend Engineer (leveling up)', 'Clinical Systems Specialist', 'App Support Engineer', 'Business Analyst'])
+// ─────────────────────────────────────────────────────────
+//  ABOUT SCREEN
+// ─────────────────────────────────────────────────────────
+function AboutScreen() {
   const XP = 7240, NXP = 10000
 
-  const achs = [
-    { icon: '🏆', label: 'Thesis Finalist',  desc: 'Best Thesis Award Finalist — IoT Flood Monitor' },
-    { icon: '⚕️', label: 'Clinical Sage',   desc: '3+ years in Veeva, Medidata & Chameleon' },
-    { icon: '🔐', label: 'Auth Wrangler',   desc: 'Solved complex SAML/SSO federation challenges' },
-    { icon: '🔗', label: 'API Veteran',     desc: '10+ years of REST, SOAP, enterprise integrations' },
-    { icon: '📡', label: 'IoT Architect',   desc: 'Built full sensor-to-dashboard IoT pipeline' },
-    { icon: '⚔️', label: 'Class Change',   desc: 'Transitioning: Support → Backend Engineering' },
-  ]
-
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,300px)', gap: 24, maxWidth: 1100 }}>
-      <div>
-        <SectionTitle icon="✦" title="Character Profile" sub="Background · Class · Equipped Skills" />
+    <ScreenShell title="About" index="01">
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)', gap: 'clamp(32px, 6vw, 80px)', paddingBottom: 80 }}>
+        <div>
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(28px, 3.5vw, 44px)', color: C.white, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 32 }}
+          >
+            Engineer who learned<br />
+            <span style={{ color: C.accent }}>to read the source.</span>
+          </motion.h2>
 
-        <Panel accent={C.gold} style={{ marginBottom: 20 }}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(20px, 3vw, 28px)', color: C.white, marginBottom: 10, lineHeight: 1.3 }}>
-            Hi, I'm <span style={{ color: C.goldBright }}>Mark.</span>
-          </div>
-          <div style={{ fontFamily: 'VT323, monospace', fontSize: 20, color: C.blueLight, letterSpacing: '0.06em', marginBottom: 18, display: 'flex', gap: 4 }}>
-            <span style={{ color: C.dimmer }}>▶ </span>{typed}<span style={{ animation: 'blink 1s step-end infinite' }}>_</span>
-          </div>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(14px, 1.4vw, 16px)', color: C.dim, lineHeight: 1.9 }}>
-            {YEARS_EXP}+ years turning complex systems into solutions — from clinical trial platforms to IoT hardware.
-            <span style={{ color: C.goldBright }}> Now leveling up into backend engineering</span> because
-            understanding the full stack makes you a better engineer at every layer.
-          </div>
-        </Panel>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-          {[{ l: 'YEARS EXP', v: `${YEARS_EXP}+` }, { l: 'SYSTEMS', v: '8+' }, { l: 'QUESTS', v: '2 Active' }].map(s => (
-            <Panel key={s.l} accent={C.gold} style={{ textAlign: 'center', padding: '16px 10px' }}>
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(20px, 3vw, 28px)', color: C.goldBright, marginBottom: 4 }}>{s.v}</div>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, letterSpacing: '0.1em' }}>{s.l}</div>
-            </Panel>
+          {[
+            `${YEARS}+ years at the intersection of technology and healthcare — managing clinical trial platforms, designing system integrations, and keeping enterprise-grade tools running without incident.`,
+            `My background spans Veeva Vault, Medidata Rave, federated SSO/SAML architecture, SQL database management, and API integrations across GxP-regulated environments.`,
+            `Now building toward backend engineering — writing Python and Go, containerizing with Docker, learning Kubernetes. Not a career change. The next level.`,
+          ].map((text, i) => (
+            <motion.p key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 + i * 0.1, duration: 0.5 }}
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 'clamp(14px, 1.4vw, 15px)', color: C.textDim, lineHeight: 1.9, marginBottom: 18 }}
+            >{text}</motion.p>
           ))}
+
+          {/* Achievements */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            style={{ marginTop: 36, borderTop: `1px solid ${C.line}`, paddingTop: 28 }}
+          >
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 20 }}>Highlights</div>
+            {[
+              { icon: '◆', text: 'Best Thesis Finalist — IoT Flood Monitoring System' },
+              { icon: '◆', text: 'SAML/SSO federation architecture across enterprise platforms' },
+              { icon: '◆', text: '3+ years GxP-regulated clinical trial system support' },
+              { icon: '◆', text: 'Cross-platform API integration specialist' },
+            ].map((h, i) => (
+              <motion.div key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.65 + i * 0.07 }}
+                style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}
+              >
+                <span style={{ color: C.accent, fontSize: 8, marginTop: 5, flexShrink: 0 }}>{h.icon}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.textDim, lineHeight: 1.6 }}>{h.text}</span>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
 
-        <Panel accent={C.gold}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: C.gold, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 14 }}>Titles & Achievements</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {achs.map((a, i) => (
-              <div key={a.label} className="click"
-                onMouseEnter={() => { setHoveredAch(i); Orchestra.menuMove() }} onMouseLeave={() => setHoveredAch(null)}
-                style={{ width: 48, height: 48, background: 'rgba(0,0,8,0.6)', border: `1px solid ${hoveredAch === i ? C.gold : C.border}`, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, position: 'relative', transition: 'all .2s', transform: hoveredAch === i ? 'scale(1.1)' : 'scale(1)' }}>
-                {a.icon}
-                {hoveredAch === i && (
-                  <div style={{ position: 'absolute', bottom: '110%', left: i >= 4 ? 'auto' : '50%', right: i >= 4 ? 0 : 'auto', transform: i >= 4 ? 'none' : 'translateX(-50%)', background: C.bgNav, border: `1px solid ${C.gold}55`, borderRadius: 2, padding: '8px 12px', fontFamily: 'VT323, monospace', zIndex: 99, boxShadow: `0 4px 20px rgba(0,0,0,0.8)`, minWidth: 180, textAlign: 'center' }}>
-                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: C.goldBright, marginBottom: 4 }}>{a.label}</div>
-                    <div style={{ fontSize: 15, color: C.dim }}>{a.desc}</div>
-                  </div>
-                )}
+        {/* Right — Status card */}
+        <div>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            style={{ background: C.bgCard, border: `1px solid ${C.line}`, padding: '28px 24px', marginBottom: 2 }}
+          >
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 24 }}>Status</div>
+            {[
+              { l: 'Name',     v: 'Mark JP' },
+              { l: 'Role',     v: 'Engineer / Analyst' },
+              { l: 'Location', v: 'Quezon City, PH' },
+              { l: 'Status',   v: 'Available', c: C.green },
+              { l: 'Focus',    v: 'Backend Eng.', c: C.accent },
+            ].map(row => (
+              <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${C.line}` }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.08em' }}>{row.l}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: row.c || C.textDim }}>{row.v}</span>
               </div>
             ))}
-          </div>
-        </Panel>
-      </div>
+          </motion.div>
 
-      {/* Character card */}
-      <div>
-        <Panel accent={C.gold} style={{ position: 'sticky', top: 0 }}>
-          <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <div style={{ margin: '0 auto 12px', position: 'relative', display: 'inline-block' }}>
-              <div style={{ position: 'absolute', inset: -8, borderRadius: 4, border: `1px solid ${C.border}`, background: `radial-gradient(circle at 40% 20%, ${C.gold}14, transparent)`, boxShadow: `0 0 20px ${C.gold}18` }} />
-              <PixelCharacter />
+          {/* XP bar */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            style={{ background: C.bgCard, border: `1px solid ${C.line}`, padding: '20px 24px' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Progress</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.accent }}>{XP}/{NXP}</span>
             </div>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: C.white }}>Mark JP</div>
-            <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.gold, marginTop: 3 }}>LVL {YEARS_EXP} · ENGINEER CLASS</div>
-          </div>
-          <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}44, transparent)`, marginBottom: 12 }} />
-          {[['CLASS', C.blueLight, 'Engineer / Analyst'], ['GUILD', C.text, 'Clinical Systems'], ['ORIGIN', C.text, 'Quezon City, PH 🇵🇭'], ['STATUS', C.green, 'AVAILABLE']].map(([l, c, v]) => (
-            <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmest }}>{l}</span>
-              <span style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: c }}>{v}</span>
+            <div style={{ height: 2, background: C.line, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(XP / NXP) * 100}%` }}
+                transition={{ delay: 0.7, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                style={{ height: '100%', background: C.accent }}
+              />
             </div>
-          ))}
-          <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${C.gold}44, transparent)`, marginTop: 12, marginBottom: 12 }} />
-          <div style={{ fontFamily: 'VT323, monospace', fontSize: 12, color: C.gold, marginBottom: 5, letterSpacing: '0.1em' }}>NEXT CLASS CHANGE</div>
-          <div style={{ height: 5, background: 'rgba(0,0,8,0.6)', borderRadius: 1, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-            <motion.div initial={{ width: 0 }} animate={{ width: `${(XP / NXP) * 100}%` }} transition={{ delay: 0.5, duration: 1.5, ease: 'easeOut' }}
-              style={{ height: '100%', background: `linear-gradient(90deg, ${C.blue}, ${C.gold})`, boxShadow: `0 0 6px ${C.gold}66` }} />
-          </div>
-          <div style={{ fontFamily: 'VT323, monospace', fontSize: 11, color: C.dimmer, marginTop: 4 }}>{XP}/{NXP} · Target: Backend Engineer</div>
-        </Panel>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: C.textMute, marginTop: 8, letterSpacing: '0.08em' }}>
+              Target: Backend Engineer
+            </div>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </ScreenShell>
   )
 }
 
-// ── Skills ──────────────────────────────────────────────────────
-const SKILLS_DATA = [
-  { name: 'System Analysis', tier: 'MASTER', color: C.goldBright, xp: 95 },
-  { name: 'Clinical SaaS Ops', tier: 'MASTER', color: C.goldBright, xp: 92 },
-  { name: 'API Integration', tier: 'MASTER', color: C.goldBright, xp: 90 },
-  { name: 'Federated Auth / SSO', tier: 'MASTER', color: C.goldBright, xp: 88 },
-  { name: 'SQL / Databases', tier: 'EXPERT', color: C.blueLight, xp: 78 },
-  { name: 'REST & SOAP APIs', tier: 'EXPERT', color: C.blueLight, xp: 80 },
-  { name: 'UAT & QA', tier: 'EXPERT', color: C.blueLight, xp: 75 },
-  { name: 'Python', tier: 'JOURNEYMAN', color: C.green, xp: 52 },
-  { name: 'Docker', tier: 'JOURNEYMAN', color: C.green, xp: 48 },
-  { name: 'Go / Kubernetes', tier: 'APPRENTICE', color: C.dimmer, xp: 25 },
-  { name: 'Backend Dev', tier: 'APPRENTICE', color: C.dimmer, xp: 30 },
-]
-const TIER_ORDER = ['MASTER', 'EXPERT', 'JOURNEYMAN', 'APPRENTICE']
-const TIER_COLORS_MAP = { MASTER: C.goldBright, EXPERT: C.blueLight, JOURNEYMAN: C.green, APPRENTICE: C.dimmer }
-const TIER_ICONS_MAP = { MASTER: '★', EXPERT: '◆', JOURNEYMAN: '▲', APPRENTICE: '○' }
-const TECH_LIST = [
-  { n: 'Python',     c: '#3776AB', s: '🐍', icon: 'python/python-original',      tier: 'JOURNEYMAN' },
-  { n: 'Go',         c: '#00ACD7', s: '◈',  icon: 'go/go-original',              tier: 'APPRENTICE' },
-  { n: 'Docker',     c: '#2496ED', s: '⬡',  icon: 'docker/docker-original',      tier: 'JOURNEYMAN' },
-  { n: 'Kubernetes', c: '#326CE5', s: '✦',  icon: 'kubernetes/kubernetes-plain', tier: 'APPRENTICE' },
-  { n: 'SQL',        c: '#F29111', s: '⊞',  icon: 'mysql/mysql-original',        tier: 'EXPERT'     },
-  { n: 'Linux',      c: '#FCC624', s: '◉',  icon: 'linux/linux-original',        tier: 'EXPERT'     },
-  { n: 'Git',        c: '#F05032', s: '⎇',  icon: 'git/git-original',            tier: 'MASTER'     },
-  { n: 'Next.js',    c: '#FFFFFF', s: '▲',  icon: 'nextjs/nextjs-original',      tier: 'JOURNEYMAN' },
-  { n: 'Veeva',      c: C.green,      s: '✚',  icon: null, tier: 'MASTER'     },
-  { n: 'Medidata',   c: C.blueLight,  s: '⬟',  icon: null, tier: 'MASTER'     },
-  { n: 'SAML/SSO',   c: C.goldBright, s: '🔐', icon: null, tier: 'MASTER'     },
-  { n: 'REST APIs',  c: '#FF6B6B',    s: '⟳',  icon: null, tier: 'MASTER'     },
+// ─────────────────────────────────────────────────────────
+//  SKILLS SCREEN
+// ─────────────────────────────────────────────────────────
+const SKILL_DATA = [
+  { name: 'System Analysis',      level: 95, cat: 'Core' },
+  { name: 'Clinical SaaS Ops',    level: 92, cat: 'Core' },
+  { name: 'API Integration',      level: 90, cat: 'Core' },
+  { name: 'Federated Auth / SSO', level: 88, cat: 'Core' },
+  { name: 'SQL & Databases',      level: 78, cat: 'Core' },
+  { name: 'Veeva Vault',          level: 92, cat: 'Platforms' },
+  { name: 'Medidata Rave',        level: 88, cat: 'Platforms' },
+  { name: 'Chameleon / IRT',      level: 80, cat: 'Platforms' },
+  { name: 'Python',               level: 52, cat: 'Engineering' },
+  { name: 'FastAPI',              level: 45, cat: 'Engineering' },
+  { name: 'Docker',               level: 48, cat: 'Engineering' },
+  { name: 'Go',                   level: 25, cat: 'Engineering' },
+  { name: 'Kubernetes',           level: 22, cat: 'Engineering' },
+  { name: 'Linux / CLI',          level: 70, cat: 'Engineering' },
 ]
 
-// ── SVG Skill Tree ───────────────────────────────────────────────
-function SkillTreeSVG() {
-  const [hoveredNode, setHoveredNode] = useState(null)
-  const [drawn, setDrawn] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setDrawn(true), 300); return () => clearTimeout(t) }, [])
+const CAT_COLORS = { Core: C.accent, Platforms: '#6BBFEF', Engineering: C.green }
 
-  const nodes = [
-    { id: 0,  tier: 'MASTER',     name: 'System Analysis', xp: 95, x: 110, y: 70  },
-    { id: 1,  tier: 'MASTER',     name: 'Clinical SaaS',   xp: 92, x: 310, y: 70  },
-    { id: 2,  tier: 'MASTER',     name: 'API Integration', xp: 90, x: 560, y: 70  },
-    { id: 3,  tier: 'MASTER',     name: 'Auth / SSO',      xp: 88, x: 770, y: 70  },
-    { id: 4,  tier: 'EXPERT',     name: 'SQL / Databases', xp: 78, x: 210, y: 185 },
-    { id: 5,  tier: 'EXPERT',     name: 'REST & SOAP',     xp: 80, x: 460, y: 185 },
-    { id: 6,  tier: 'EXPERT',     name: 'UAT & QA',        xp: 75, x: 680, y: 185 },
-    { id: 7,  tier: 'JOURNEYMAN', name: 'Python',          xp: 52, x: 300, y: 300 },
-    { id: 8,  tier: 'JOURNEYMAN', name: 'Docker',          xp: 48, x: 560, y: 300 },
-    { id: 9,  tier: 'APPRENTICE', name: 'Go / Kubernetes', xp: 25, x: 300, y: 405 },
-    { id: 10, tier: 'APPRENTICE', name: 'Backend Dev',     xp: 30, x: 560, y: 405 },
-  ]
-  const edges = [[0,4],[1,4],[1,5],[2,5],[2,6],[3,6],[4,7],[5,7],[5,8],[6,8],[7,9],[8,10]]
-  const hov = hoveredNode !== null ? nodes.find(n => n.id === hoveredNode) : null
+function SkillsScreen() {
+  const [active, setActive] = useState('All')
+  const cats = ['All', 'Core', 'Platforms', 'Engineering']
+  const filtered = active === 'All' ? SKILL_DATA : SKILL_DATA.filter(s => s.cat === active)
 
   return (
-    <div>
-      <svg viewBox="0 0 880 450" style={{ width: '100%', height: 'auto' }}>
-        {edges.map(([a, b], i) => {
-          const na = nodes[a], nb = nodes[b], col = TIER_COLORS_MAP[na.tier]
-          return (
-            <line key={i} x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
-              stroke={col} strokeWidth={1.5} strokeOpacity={0.35} strokeDasharray={400}
-              style={{ strokeDashoffset: drawn ? 0 : 400, transition: `stroke-dashoffset 1.4s ease-out ${i * 0.07}s` }}
-            />
-          )
-        })}
-        {nodes.map(node => {
-          const col = TIER_COLORS_MAP[node.tier], isH = hoveredNode === node.id, r = 20
-          const arc = 2 * Math.PI * (r - 5)
-          return (
-            <g key={node.id} transform={`translate(${node.x},${node.y})`}
-              onMouseEnter={() => { setHoveredNode(node.id); Orchestra.menuMove() }}
-              onMouseLeave={() => setHoveredNode(null)}
-              style={{ cursor: 'none' }}
-            >
-              <circle r={r + 10} fill={col} opacity={isH ? 0.14 : 0.04} />
-              <circle r={r} fill={isH ? `${col}1a` : 'rgba(4,4,15,0.88)'} stroke={col} strokeWidth={isH ? 2 : 1.5} opacity={isH ? 1 : 0.85}
-                style={{ transition: 'all 0.2s', filter: isH ? `drop-shadow(0 0 5px ${col})` : 'none' }} />
-              <circle r={r - 5} fill="none" stroke={col} strokeWidth={2.5} strokeOpacity={0.35}
-                strokeDasharray={`${(node.xp / 100) * arc} 9999`} transform="rotate(-90)" />
-              <text textAnchor="middle" dominantBaseline="central" fontSize="12" fill={col} style={{ fontFamily: 'serif', userSelect: 'none' }}>
-                {TIER_ICONS_MAP[node.tier]}
-              </text>
-              <text textAnchor="middle" y={r + 16} fontSize="11" fill={isH ? col : '#7888A8'} style={{ fontFamily: 'VT323, monospace', userSelect: 'none' }}>
-                {node.name}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-      {hov && (
-        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-          style={{ marginTop: 10, padding: '10px 16px', background: 'rgba(4,4,15,0.95)', border: `1px solid ${TIER_COLORS_MAP[hov.tier]}55`, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ color: TIER_COLORS_MAP[hov.tier], fontSize: 18 }}>{TIER_ICONS_MAP[hov.tier]}</span>
-          <div>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: TIER_COLORS_MAP[hov.tier], letterSpacing: '0.1em' }}>{hov.name}</div>
-            <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmer }}>{hov.tier}</div>
-          </div>
-          <div style={{ flex: 1, height: 4, background: 'rgba(0,0,8,0.6)', borderRadius: 1, border: `1px solid ${TIER_COLORS_MAP[hov.tier]}33`, overflow: 'hidden', marginLeft: 8 }}>
-            <div style={{ height: '100%', width: `${hov.xp}%`, background: `linear-gradient(90deg, ${TIER_COLORS_MAP[hov.tier]}66, ${TIER_COLORS_MAP[hov.tier]})` }} />
-          </div>
-          <span style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: TIER_COLORS_MAP[hov.tier] }}>{hov.xp}%</span>
+    <ScreenShell title="Skills" index="02">
+      <div style={{ paddingBottom: 80 }}>
+        {/* Filter tabs */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          style={{ display: 'flex', gap: 2, marginBottom: 36 }}
+        >
+          {cats.map(c => (
+            <button key={c} onClick={() => setActive(c)}
+              style={{
+                background: active === c ? C.accentDim : 'transparent',
+                border: `1px solid ${active === c ? C.accent + '44' : C.line}`,
+                cursor: 'pointer', padding: '7px 16px',
+                fontFamily: "'DM Mono', monospace", fontSize: 10,
+                color: active === c ? C.accent : C.textMute,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                transition: 'all 0.2s',
+              }}
+            >{c}</button>
+          ))}
         </motion.div>
-      )}
-    </div>
+
+        {/* Skill bars */}
+        <AnimatePresence mode="wait">
+          <motion.div key={active}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
+          >
+            {filtered.map((skill, i) => (
+              <motion.div key={skill.name}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04, duration: 0.4 }}
+                style={{
+                  display: 'grid', gridTemplateColumns: '200px 1fr 48px',
+                  gap: 24, alignItems: 'center',
+                  padding: '14px 0',
+                  borderBottom: `1px solid ${C.line}`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 3, height: 3, background: CAT_COLORS[skill.cat], borderRadius: '50%', flexShrink: 0 }} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.textDim }}>{skill.name}</span>
+                </div>
+                <div style={{ height: 2, background: C.line, overflow: 'hidden' }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${skill.level}%` }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.04 + 0.2, duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ height: '100%', background: CAT_COLORS[skill.cat] }}
+                  />
+                </div>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, textAlign: 'right' }}>{skill.level}%</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Tech tags */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          style={{ marginTop: 48, borderTop: `1px solid ${C.line}`, paddingTop: 36 }}
+        >
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 20 }}>Also worked with</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {['Jira', 'Confluence', 'ServiceNow', 'Git', 'Next.js', 'REST APIs', 'SOAP', 'PostgreSQL', 'GxP Compliance', 'UAT', 'SSO/SAML', 'SFTP'].map(tag => (
+              <span key={tag} style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, border: `1px solid ${C.line}`, padding: '5px 12px', letterSpacing: '0.06em' }}>{tag}</span>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </ScreenShell>
   )
 }
 
-// ── 3D Tech Card ─────────────────────────────────────────────────
-function TechCard({ tech, index }) {
-  const [tilt, setTilt] = useState({ x: 0, y: 0 })
-  const [hovered, setHovered] = useState(false)
-  const [imgErr, setImgErr] = useState(false)
-  const ref = useRef(null)
+// ─────────────────────────────────────────────────────────
+//  PROJECTS SCREEN
+// ─────────────────────────────────────────────────────────
+const PROJECT_DATA = [
+  {
+    num: '01',
+    title: 'IoT Flood Monitoring System',
+    status: 'Completed',
+    sc: C.green,
+    tags: ['IoT', 'Sensors', 'Real-time', 'Embedded Systems'],
+    desc: 'End-to-end flood monitoring system for thesis — real-time sensor ingestion, alert pipelines, live monitoring dashboard. Awarded Best Thesis Finalist.',
+    link: null, github: null,
+  },
+  {
+    num: '02',
+    title: 'markjp.dev',
+    status: 'Live',
+    sc: C.accent,
+    tags: ['Next.js', 'Framer Motion', 'Netlify', 'CSS'],
+    desc: 'Personal portfolio designed and built from scratch. Cinematic intro, full-screen sections, scroll-free navigation, deployed via GitHub → Netlify pipeline.',
+    link: 'https://markjp.dev', github: null,
+  },
+  {
+    num: '03',
+    title: 'Clinical REST API',
+    status: 'In Progress',
+    sc: '#6BBFEF',
+    tags: ['Python', 'FastAPI', 'PostgreSQL', 'Docker'],
+    desc: 'Mock clinical data API built with domain knowledge from years in healthcare SaaS. OpenAPI docs, containerized deployment, structured around real eClinical workflows.',
+    link: null, github: null, wip: true,
+  },
+]
 
-  const onMove = e => {
-    const r = ref.current?.getBoundingClientRect()
-    if (!r) return
-    setTilt({ x: ((e.clientY - r.top - r.height / 2) / (r.height / 2)) * 13, y: -((e.clientX - r.left - r.width / 2) / (r.width / 2)) * 13 })
+function ProjectsScreen() {
+  const [open, setOpen] = useState(null)
+
+  return (
+    <ScreenShell title="Projects" index="03">
+      <div style={{ paddingBottom: 80 }}>
+        {PROJECT_DATA.map((p, i) => (
+          <motion.div key={p.num}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1, duration: 0.5 }}
+            style={{ marginBottom: 2 }}
+          >
+            <div
+              onClick={() => setOpen(open === p.num ? null : p.num)}
+              style={{
+                background: open === p.num ? C.bgCard : 'transparent',
+                border: `1px solid ${open === p.num ? C.lineHover : C.line}`,
+                padding: 'clamp(20px, 3vw, 32px)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => { if (open !== p.num) e.currentTarget.style.borderColor = C.lineHover }}
+              onMouseOut={e => { if (open !== p.num) e.currentTarget.style.borderColor = C.line }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: open === p.num ? 20 : 0 }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, width: 24, flexShrink: 0 }}>{p.num}</span>
+                <h3 style={{ flex: 1, fontFamily: "'Syne', sans-serif", fontSize: 'clamp(16px, 2vw, 20px)', color: C.white, fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>{p.title}</h3>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: p.sc, border: `1px solid ${p.sc}44`, padding: '3px 10px', letterSpacing: '0.08em', flexShrink: 0 }}>{p.status}</span>
+                <span style={{ color: C.textMute, fontSize: 12, transform: open === p.num ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>→</span>
+              </div>
+
+              <AnimatePresence>
+                {open === p.num && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{ overflow: 'hidden', paddingLeft: 44 }}
+                  >
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.textDim, lineHeight: 1.8, marginBottom: 16, maxWidth: 600 }}>{p.desc}</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                      {p.tags.map(t => (
+                        <span key={t} style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: C.textMute, border: `1px solid ${C.line}`, padding: '4px 10px', letterSpacing: '0.06em' }}>{t}</span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      {p.link && <a href={p.link} target="_blank" rel="noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: C.accent, textDecoration: 'none', letterSpacing: '0.08em' }}>↗ Visit Site</a>}
+                      {p.github && <a href={p.github} target="_blank" rel="noreferrer" style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: C.accent, textDecoration: 'none', letterSpacing: '0.08em' }}>↗ GitHub</a>}
+                      {p.wip && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: C.textMute, letterSpacing: '0.08em' }}>Links available on deploy</span>}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        ))}
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: C.textMute, marginTop: 24, letterSpacing: '0.06em' }}
+        >
+          More projects in progress. GitHub links added on deploy.
+        </motion.p>
+      </div>
+    </ScreenShell>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+//  CONTACT SCREEN
+// ─────────────────────────────────────────────────────────
+function ContactScreen() {
+  const [form, setForm] = useState({ name: '', email: '', message: '' })
+  const [sent, setSent] = useState(false)
+
+  const submit = e => {
+    e.preventDefault()
+    window.open(`mailto:mark@markjp.dev?subject=${encodeURIComponent(`Message from ${form.name}`)}&body=${encodeURIComponent(`From: ${form.name}\nEmail: ${form.email}\n\n${form.message}`)}`)
+    setSent(true)
   }
 
-  const iconUrl = tech.icon ? `https://cdn.jsdelivr.net/gh/devicons/devicon/icons/${tech.icon}.svg` : null
-  const tierCol = TIER_COLORS_MAP[tech.tier] || C.dimmer
+  const inp = {
+    width: '100%', background: C.bgCard,
+    border: `1px solid ${C.line}`, padding: '12px 16px',
+    fontFamily: "'DM Sans', sans-serif", fontSize: 14,
+    color: C.text, outline: 'none',
+    transition: 'border-color 0.2s',
+  }
+  const lbl = {
+    fontFamily: "'DM Mono', monospace", fontSize: 10,
+    color: C.textMute, letterSpacing: '0.14em',
+    textTransform: 'uppercase', display: 'block', marginBottom: 8,
+  }
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.04, duration: 0.3 }}
-      style={{ perspective: '600px' }}>
-      <div ref={ref} className="click"
-        onMouseMove={onMove}
-        onMouseEnter={() => { setHovered(true); Orchestra.menuMove() }}
-        onMouseLeave={() => { setTilt({ x: 0, y: 0 }); setHovered(false) }}
-        style={{
-          background: `${tech.c}10`, border: `1px solid ${hovered ? tech.c + '66' : tech.c + '28'}`,
-          borderRadius: 3, padding: '14px 8px 10px', textAlign: 'center',
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${hovered ? 1.08 : 1})`,
-          transition: hovered ? 'transform 0.08s ease-out, border-color 0.2s' : 'transform 0.4s ease-out, border-color 0.2s',
-          position: 'relative', overflow: 'hidden', transformStyle: 'preserve-3d',
-        }}>
-        {hovered && (
-          <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(circle at ${50 - tilt.y * 1.5}% ${50 - tilt.x * 1.5}%, rgba(255,255,255,0.07), transparent 65%)` }} />
-        )}
-        <div style={{ height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
-          {iconUrl && !imgErr
-            ? <img src={iconUrl} alt={tech.n} width={34} height={34} onError={() => setImgErr(true)} style={{ objectFit: 'contain' }} />
-            : <span style={{ fontSize: 22 }}>{tech.s}</span>
-          }
-        </div>
-        <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: tech.c, lineHeight: 1.2, marginBottom: 4 }}>{tech.n}</div>
-        <div style={{ fontFamily: "'Cinzel', serif", fontSize: 8, color: tierCol, letterSpacing: '0.06em', opacity: 0.8 }}>{tech.tier}</div>
-      </div>
-    </motion.div>
-  )
-}
+    <ScreenShell title="Contact" index="04">
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'clamp(32px, 6vw, 80px)', paddingBottom: 80 }}>
+        <div>
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(26px, 3vw, 40px)', color: C.white, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 20 }}
+          >
+            Let's work<br /><span style={{ color: C.accent }}>together.</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.textDim, lineHeight: 1.85, marginBottom: 40 }}
+          >
+            Open to backend engineering roles, clinical systems consulting, and interesting problems at the intersection of tech and healthcare.
+          </motion.p>
 
-function AnimBar({ skill, delay }) {
-  const ref = useRef(null); const [on, setOn] = useState(false)
-  useEffect(() => { const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) setOn(true) }, { threshold: 0.5 }); if (ref.current) o.observe(ref.current); return () => o.disconnect() }, [])
-  return (
-    <div ref={ref} style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: TIER_COLORS_MAP[skill.tier], fontSize: 10 }}>{TIER_ICONS_MAP[skill.tier]}</span>
-          <span style={{ fontFamily: 'VT323, monospace', fontSize: 17, color: C.text }}>{skill.name}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <span style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: TIER_COLORS_MAP[skill.tier], letterSpacing: '0.1em' }}>{skill.tier}</span>
-          <span style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmer }}>{skill.xp}%</span>
-        </div>
-      </div>
-      <div style={{ height: 4, background: 'rgba(0,0,8,0.6)', borderRadius: 1, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-        <motion.div initial={{ width: 0 }} animate={{ width: on ? `${skill.xp}%` : 0 }} transition={{ delay: delay + 0.1, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          style={{ height: '100%', background: `linear-gradient(90deg, ${skill.color}66, ${skill.color})`, boxShadow: `0 0 5px ${skill.color}55` }} />
-      </div>
-    </div>
-  )
-}
-
-function SkillsSection() {
-  const [tab, setTab] = useState('tree')
-  const grouped = TIER_ORDER.reduce((a, t) => { a[t] = SKILLS_DATA.filter(s => s.tier === t); return a }, {})
-  return (
-    <div style={{ maxWidth: 900 }}>
-      <SectionTitle icon="⚡" title="Abilities" sub="Skill tree · Rankings · Equipped technologies" color={C.blueLight} />
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {[['tree', 'Skill Tree'], ['bag', 'Tech Inventory']].map(([k, l]) => (
-          <button key={k} className="click" onMouseEnter={() => Orchestra.menuMove()} onClick={() => { setTab(k); Orchestra.menuConfirm() }}
-            style={{ background: tab === k ? `${C.gold}14` : 'transparent', border: `1px solid ${tab === k ? C.gold : C.border}`, borderRadius: 2, padding: '8px 18px', fontFamily: "'Cinzel', serif", fontSize: 11, color: tab === k ? C.goldBright : C.dim, letterSpacing: '0.12em', cursor: 'none', transition: 'all .2s', textTransform: 'uppercase' }}>
-            {l}
-          </button>
-        ))}
-      </div>
-      <AnimatePresence mode="wait">
-        {tab === 'tree' && (
-          <motion.div key="tree" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <Panel accent={C.blue} style={{ padding: '16px 10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 12, flexWrap: 'wrap' }}>
-                {TIER_ORDER.map(t => (
-                  <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ color: TIER_COLORS_MAP[t], fontSize: 10 }}>{TIER_ICONS_MAP[t]}</span>
-                    <span style={{ fontFamily: "'Cinzel', serif", fontSize: 9, color: TIER_COLORS_MAP[t], letterSpacing: '0.1em' }}>{t}</span>
-                  </div>
-                ))}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+            {[
+              { l: 'Email',    v: 'mark@markjp.dev',             h: 'mailto:mark@markjp.dev' },
+              { l: 'GitHub',   v: 'github.com/markjpdev',        h: 'https://github.com/markjpdev' },
+              { l: 'LinkedIn', v: 'in/jaysonpunsalan',           h: 'https://linkedin.com/in/jaysonpunsalan' },
+            ].map((item, i) => (
+              <div key={item.l} style={{ padding: '14px 0', borderBottom: `1px solid ${C.line}` }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: C.textMute, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>{item.l}</div>
+                <a href={item.h} target={item.h.startsWith('mailto') ? undefined : '_blank'} rel="noreferrer"
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.textDim, textDecoration: 'none', transition: 'color 0.2s' }}
+                  onMouseOver={e => e.currentTarget.style.color = C.accent}
+                  onMouseOut={e => e.currentTarget.style.color = C.textDim}
+                >{item.v}</a>
               </div>
-              <SkillTreeSVG />
-            </Panel>
+            ))}
           </motion.div>
-        )}
-        {tab === 'bag' && (
-          <motion.div key="bag" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: 10 }}>
-              {TECH_LIST.map((t, i) => <TechCard key={t.n} tech={t} index={i} />)}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-// ── Quests ──────────────────────────────────────────────────────
-const QUESTS_DATA = [
-  { id: 'Q-001', title: 'IoT Flood Monitoring System', status: 'COMPLETE', sc: C.green, ch: 'Chapter I', desc: 'Built an end-to-end IoT flood monitoring system for thesis — real-time sensor ingestion, alert pipelines, and a live monitoring dashboard. Awarded Thesis Finalist for Best Thesis.', tech: ['IoT', 'Sensors', 'Real-time Data', 'Embedded Systems'], xp: '1,200', reward: 'Thesis Finalist Award', locked: false },
-  { id: 'Q-002', title: 'Portfolio Rebuild — markjp.dev', status: 'ACTIVE', sc: C.gold, ch: 'Chapter II', desc: 'Complete redesign of personal portfolio as a Final Fantasy-inspired game experience. Cinematic intro, title screen, orchestral ambient music, full-screen sections, animated skill bars. Next.js + Framer Motion.', tech: ['Next.js', 'Framer Motion', 'Web Audio API', 'Netlify'], xp: '600', reward: 'Unique Digital Identity', locked: false },
-  { id: 'Q-003', title: '??? — The Sealed Quest', status: 'SEALED', sc: C.dimmer, ch: 'Chapter III', desc: 'A new quest stirs in the darkness. Built with Godot Engine. The world is not yet ready to know its name.', tech: ['Godot', 'GDScript', 'Game Dev'], xp: '???', reward: 'Unknown', locked: true },
-]
-
-function QuestsSection() {
-  const [open, setOpen] = useState(null)
-  const [hoveredQuest, setHoveredQuest] = useState(null)
-  return (
-    <div style={{ maxWidth: 860 }}>
-      <SectionTitle icon="📜" title="Quest Log" sub="Completed chapters · Active missions · Sealed stories" color={C.goldBright} />
-      <div style={{ display: 'grid', gap: 14 }}>
-        {QUESTS_DATA.map((q, i) => (
-          <motion.div key={q.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1, duration: 0.5 }}
-            className="click" onClick={() => { if (!q.locked) { setOpen(open === q.id ? null : q.id); Orchestra.menuConfirm() } }}
-            onMouseEnter={() => { if (!q.locked) { setHoveredQuest(q.id); Orchestra.menuMove() } }}
-            onMouseLeave={() => setHoveredQuest(null)}
-            whileHover={!q.locked ? { y: -2 } : {}}
-            style={{ background: C.bgCard, border: `1px solid ${q.locked ? C.border : hoveredQuest === q.id ? q.sc + '88' : q.sc + '33'}`, borderLeft: `3px solid ${q.locked ? C.dimmer : hoveredQuest === q.id ? q.sc : q.sc + 'aa'}`, borderRadius: 2, padding: '20px 22px', cursor: q.locked ? 'default' : 'none', opacity: q.locked ? 0.45 : 1, backdropFilter: 'blur(10px)', transition: 'border .2s, background .2s' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmest, letterSpacing: '0.1em' }}>{q.id}</span>
-                <span style={{ fontFamily: "'Cinzel', serif", fontSize: 8, color: C.dimmer, letterSpacing: '0.1em' }}>{q.ch}</span>
-                <span style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: q.sc, border: `1px solid ${q.sc}44`, padding: '1px 7px', borderRadius: 1 }}>{q.status}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.gold }}>{q.xp} XP</span>
-                {!q.locked && <span style={{ color: open === q.id ? C.gold : C.dimmer, fontSize: 12 }}>{open === q.id ? '▲' : '▼'}</span>}
-              </div>
-            </div>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(11px, 1.4vw, 14px)', color: C.text, marginBottom: 10, lineHeight: 1.6 }}>{q.locked ? '??? — The Sealed Quest' : q.title}</div>
-            <AnimatePresence>
-              {open === q.id && !q.locked && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: 14, color: C.dim, lineHeight: 1.8, marginBottom: 12, paddingTop: 8 }}>{q.desc}</div>
-                  <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.gold, marginBottom: 12 }}>✦ Reward: {q.reward}</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {open !== q.id && !q.locked && <div style={{ fontFamily: 'Georgia, serif', fontSize: 13, color: C.dimmer }}>{q.desc.slice(0, 90)}... <span style={{ color: C.gold, fontFamily: "'Cinzel', serif", fontSize: 10 }}>[ click to open ]</span></div>}
-            {q.locked && <div style={{ fontFamily: 'VT323, monospace', fontSize: 16, color: C.dimmer }}>🔒 {q.desc}</div>}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
-              {q.tech.map(t => <span key={t} style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.blueLight, background: `${C.blue}14`, border: `1px solid ${C.blue}33`, padding: '1px 8px', borderRadius: 1 }}>{t}</span>)}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Contact ─────────────────────────────────────────────────────
-function ContactSection() {
-  const [showForm, setShowForm] = useState(false)
-  return (
-    <div style={{ maxWidth: 760 }}>
-      <SectionTitle icon="✉" title="Send a Message" sub="Open for quests · Collaboration · Conversation" color={C.green} />
-      <Panel accent={C.green} style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(14px, 1.5vw, 16px)', color: C.dim, lineHeight: 1.9, marginBottom: 14 }}>
-          Whether you're here as a recruiter, a fellow developer, or just exploring — welcome. I'm actively seeking new opportunities in backend and full-stack engineering.
         </div>
-        <div style={{ fontFamily: 'VT323, monospace', fontSize: 18, color: C.green }}>🟢 AVAILABLE — Seeking backend / full-stack roles</div>
-      </Panel>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-        {[
-          { icon: '📧', l: 'EMAIL',    v: 'mark@markjp.dev',        h: 'mailto:mark@markjp.dev',                c: C.goldBright },
-          { icon: '🐙', l: 'GITHUB',  v: 'github.com/markjpdev',   h: 'https://github.com/markjpdev',          c: C.blueLight  },
-          { icon: '💼', l: 'LINKEDIN',v: 'in/jaysonpunsalan',      h: 'https://linkedin.com/in/jaysonpunsalan',c: C.blueLight  },
-          { icon: '🌐', l: 'WEBSITE', v: 'markjp.dev',             h: 'https://markjp.dev',                    c: C.goldBright },
-        ].map((item, i) => (
-          <motion.a key={item.l} href={item.h} target={item.h.startsWith('mailto') ? undefined : '_blank'} rel="noreferrer"
-            className="click" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            onMouseEnter={e => { Orchestra.menuMove(); e.currentTarget.style.borderColor = `${item.c}55`; e.currentTarget.style.transform = 'translateX(4px)'; e.currentTarget.querySelector('.arrow').style.opacity = '1' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateX(0)'; e.currentTarget.querySelector('.arrow').style.opacity = '0' }}
-            onClick={() => Orchestra.menuConfirm()}
-            style={{ display: 'flex', alignItems: 'center', gap: 14, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 2, padding: '14px 18px', backdropFilter: 'blur(10px)', transition: 'all .2s', textDecoration: 'none' }}>
-            <span style={{ fontSize: 22 }}>{item.icon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 13, color: C.dimmest, letterSpacing: '0.15em' }}>{item.l}</div>
-              <div style={{ fontFamily: 'VT323, monospace', fontSize: 15, color: item.c }}>{item.v}</div>
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          {sent ? (
+            <div style={{ background: C.bgCard, border: `1px solid ${C.line}`, padding: '48px 32px', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, color: C.white, fontWeight: 700, marginBottom: 12 }}>Sent.</div>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.textDim, lineHeight: 1.7 }}>Your mail client should have opened. I'll be in touch.</p>
             </div>
-            <span className="arrow" style={{ fontFamily: 'VT323, monospace', fontSize: 18, color: item.c, opacity: 0, transition: 'opacity .2s' }}>→</span>
-          </motion.a>
-        ))}
-      </div>
-      {!showForm ? (
-        <button className="click" onMouseEnter={() => Orchestra.menuMove()} onClick={() => { Orchestra.menuConfirm(); setShowForm(true) }}
-          style={{ background: 'transparent', border: `1px solid ${C.gold}`, borderRadius: 2, padding: '13px 28px', fontFamily: "'Cinzel', serif", fontSize: 12, color: C.goldBright, letterSpacing: '0.2em', cursor: 'none', transition: 'all .2s', textTransform: 'uppercase' }}>
-          ✉ Compose a Message
-        </button>
-      ) : (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Panel accent={C.gold}>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, color: C.gold, marginBottom: 6, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Send Transmission</div>
-            <div style={{ fontFamily: 'VT323, monospace', fontSize: 14, color: C.dimmer, marginBottom: 20 }}>→ mark@markjp.dev</div>
-            <ContactForm onClose={() => { Orchestra.menuCancel(); setShowForm(false) }} />
-          </Panel>
+          ) : (
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {[{ k: 'name', l: 'Name', t: 'text', p: 'Your name' }, { k: 'email', l: 'Email', t: 'email', p: 'your@email.com' }].map(f => (
+                <div key={f.k}>
+                  <label style={lbl}>{f.l}</label>
+                  <input style={inp} type={f.t} placeholder={f.p} value={form[f.k]} required
+                    onChange={e => setForm(p => ({ ...p, [f.k]: e.target.value }))}
+                    onFocus={e => e.target.style.borderColor = C.accent}
+                    onBlur={e => e.target.style.borderColor = C.line} />
+                </div>
+              ))}
+              <div>
+                <label style={lbl}>Message</label>
+                <textarea style={{ ...inp, minHeight: 110, resize: 'vertical' }} placeholder="What's on your mind?" value={form.message} required
+                  onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                  onFocus={e => e.target.style.borderColor = C.accent}
+                  onBlur={e => e.target.style.borderColor = C.line} />
+              </div>
+              <button type="submit"
+                style={{ background: C.accent, border: 'none', padding: '13px 28px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: C.bg, fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', transition: 'opacity 0.2s', textTransform: 'uppercase', alignSelf: 'flex-start' }}
+                onMouseOver={e => e.currentTarget.style.opacity = '0.8'}
+                onMouseOut={e => e.currentTarget.style.opacity = '1'}
+              >Send Message →</button>
+            </form>
+          )}
         </motion.div>
-      )}
-    </div>
-  )
-}
-
-// ── Helpers ──────────────────────────────────────────────────────
-function MusicToggle() {
-  const [on, setOn] = useState(true)
-  const toggle = () => { const n = !on; setOn(n); n ? Orchestra.setVol(0.5) : Orchestra.setVol(0) }
-  return (
-    <button className="click" onClick={toggle} onMouseEnter={() => Orchestra.menuMove()}
-      onMouseOver={e => { e.currentTarget.style.borderColor = on ? C.gold : C.red; e.currentTarget.style.background = on ? `${C.gold}14` : `${C.red}14` }}
-      onMouseOut={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = 'transparent' }}
-      style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 2, padding: '4px 10px', fontFamily: "'Cinzel', serif", fontSize: 10, color: on ? C.gold : C.red, letterSpacing: '0.1em', transition: 'all .2s' }}>
-      {on ? '♪ ON' : '♪ MUTED'}
-    </button>
-  )
-}
-
-function useTypewriter(words, speed = 90, pause = 2000) {
-  const [display, setDisplay] = useState(''); const [wi, setWi] = useState(0); const [ci, setCi] = useState(0); const [del, setDel] = useState(false)
-  useEffect(() => {
-    const word = words[wi % words.length]; let t
-    if (!del && ci <= word.length) { setDisplay(word.slice(0, ci)); t = setTimeout(() => setCi(c => c + 1), speed) }
-    else if (!del) { t = setTimeout(() => setDel(true), pause) }
-    else if (del && ci >= 0) { setDisplay(word.slice(0, ci)); t = setTimeout(() => setCi(c => c - 1), speed / 2) }
-    else { setDel(false); setWi(i => (i + 1) % words.length) }
-    return () => clearTimeout(t)
-  }, [ci, del, wi, words, speed, pause])
-  return display
-}
-
-function ContactForm({ onClose }) {
-  const [f, setF] = useState({ name: '', email: '', message: '' }); const [s, setS] = useState('idle')
-  const sub = e => { e.preventDefault(); setS('sending'); Orchestra.transition(); window.open(`mailto:mark@markjp.dev?subject=${encodeURIComponent(`Message from ${f.name}`)}&body=${encodeURIComponent(`From: ${f.name}\nEmail: ${f.email}\n\n${f.message}`)}`); setTimeout(() => setS('sent'), 700) }
-  const inp = { width: '100%', background: 'rgba(0,0,8,0.6)', border: `1px solid ${C.border}`, borderRadius: 2, padding: '10px 14px', color: C.text, fontFamily: 'VT323, monospace', fontSize: 17, outline: 'none', marginBottom: 14, transition: 'border-color .2s' }
-  if (s === 'sent') return (
-    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-      <div style={{ fontSize: 36, marginBottom: 14 }}>✅</div>
-      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: C.green, marginBottom: 10, letterSpacing: '0.1em' }}>TRANSMISSION SENT</div>
-      <div style={{ fontFamily: 'VT323, monospace', fontSize: 17, color: C.dim, marginBottom: 22 }}>Your mail app should have opened. Talk soon, adventurer!</div>
-      <button className="click" onClick={onClose} onMouseEnter={() => Orchestra.menuMove()} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 2, padding: '9px 20px', fontFamily: "'Cinzel', serif", fontSize: 11, color: C.silver, cursor: 'none', letterSpacing: '0.15em' }}>CLOSE</button>
-    </div>
-  )
-  return (
-    <form onSubmit={sub}>
-      {[{ k: 'name', l: 'YOUR NAME', t: 'text', p: 'Enter your name...' }, { k: 'email', l: 'YOUR EMAIL', t: 'email', p: 'your@email.com' }].map(fi => (
-        <div key={fi.k}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: C.dimmer, letterSpacing: '0.2em', marginBottom: 5, textTransform: 'uppercase' }}>{fi.l}</div>
-          <input style={inp} type={fi.t} placeholder={fi.p} value={f[fi.k]} required onChange={e => setF(p => ({ ...p, [fi.k]: e.target.value }))} onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border} />
-        </div>
-      ))}
-      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: C.dimmer, letterSpacing: '0.2em', marginBottom: 5, textTransform: 'uppercase' }}>MESSAGE</div>
-      <textarea style={{ ...inp, minHeight: 100, resize: 'vertical', marginBottom: 20 }} placeholder="Write your message..." value={f.message} required onChange={e => setF(p => ({ ...p, message: e.target.value }))} onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border} />
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button type="submit" className="click" onMouseEnter={() => Orchestra.menuMove()}
-          style={{ flex: 1, background: `linear-gradient(135deg, ${C.blue}44, ${C.gold}33)`, border: `1px solid ${C.gold}55`, borderRadius: 2, padding: '12px', fontFamily: "'Cinzel', serif", fontSize: 11, color: C.goldBright, cursor: 'none', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-          {s === 'sending' ? 'Sending...' : 'Send ▶'}
-        </button>
-        <button type="button" className="click" onClick={onClose} onMouseEnter={() => Orchestra.menuMove()}
-          style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 2, padding: '12px 18px', fontFamily: "'Cinzel', serif", fontSize: 11, color: C.dim, cursor: 'none', letterSpacing: '0.1em' }}>Cancel</button>
       </div>
-    </form>
+    </ScreenShell>
   )
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  APP STATE MACHINE
-//  cinematic → title → transition → main → [section]
-// ═══════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
+//  ROOT — State machine
+//  intro → title → transition → home → [section]
+// ─────────────────────────────────────────────────────────
 export default function Home() {
   const [mounted, setMounted] = useState(false)
-  const [phase, setPhase] = useState('cinematic') // cinematic | title | transition | main
+  const [phase, setPhase] = useState('intro')
   const [section, setSection] = useState(null)
-  const [glassFlash, setGlassFlash] = useState(null)
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => setMounted(true), [])
   if (!mounted) return null
 
-  const handleNavigate = (id) => {
-    setSection(id)
-    Orchestra.sectionEnter()
+  const navigate = id => {
+    if (id === 'home') { setSection(null) }
+    else { setSection(id) }
   }
 
-  const handleGlassNav = (id) => {
-    setGlassFlash({ id })
-    Orchestra.transition()
-    // Section loads mid-black so it fades in behind the overlay
-    setTimeout(() => { setSection(id); Orchestra.sectionEnter() }, 520)
-  }
+  const SCREENS = { about: AboutScreen, skills: SkillsScreen, projects: ProjectsScreen, contact: ContactScreen }
+  const ActiveScreen = section ? SCREENS[section] : null
 
   return (
     <>
       <Head>
-        <title>Mark JP — Portfolio</title>
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <meta name="description" content="Mark JP — Engineer, Analyst, Builder." />
+        <title>Mark JP — Engineer & Analyst</title>
+        <meta name="description" content="Mark JP — Business Analyst, Application Support Engineer, Clinical Systems Specialist. Based in the Philippines." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </Head>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Press+Start+2P&family=VT323&display=swap');
-        *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body, #__next { background: ${C.black}; color: ${C.text}; height: 100%; overflow: hidden; }
-        * { cursor: none !important; }
-        a { text-decoration: none; color: inherit; }
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body, #__next { background: ${C.bg}; height: 100%; }
+        body { -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        a { color: inherit; }
+        button { outline: none; }
+
         ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: ${C.black}; }
-        ::-webkit-scrollbar-thumb { background: ${C.gold}55; border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: ${C.bg}; }
+        ::-webkit-scrollbar-thumb { background: ${C.accent}44; }
+        ::selection { background: ${C.accentDim}; color: ${C.white}; }
 
-        @keyframes blink         { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes buttonBreathe { 0%,100%{box-shadow:0 0 0px ${C.gold}00} 50%{box-shadow:0 0 14px ${C.gold}44,0 0 28px ${C.gold}22} }
-        @keyframes ffBlink       { 0%,100%{opacity:1;text-shadow:0 0 16px ${C.goldBright},0 0 40px ${C.gold}66} 50%{opacity:0.4;text-shadow:none} }
-        @keyframes pulse         { 0%,100%{box-shadow:0 0 4px ${C.green}} 50%{box-shadow:0 0 10px ${C.green},0 0 20px ${C.green}66} }
-        @keyframes orbFloat      { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-10px) rotate(1deg)} }
-        @keyframes breathe       { 0%,100%{opacity:0.5,transform:scale(1)} 50%{opacity:1,transform:scale(1.05)} }
-        @keyframes cursorBlink   { 0%,100%{opacity:1;filter:drop-shadow(0 0 3px ${C.gold}) drop-shadow(0 0 7px ${C.gold}88)} 50%{opacity:0.65;filter:drop-shadow(0 0 2px ${C.gold}66)} }
-
-        /* Override for scrollable sections */
-        .section-scroll { overflow-y: auto !important; }
-        .section-scroll body { overflow: auto !important; }
+        input::placeholder, textarea::placeholder {
+          color: ${C.textMute};
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+        }
       `}} />
 
-      <FFCursor />
-
-      {/* Octopath-style fade to black — outside AnimatePresence, persists across section transition */}
-      {glassFlash && (
-        <motion.div
-          key={glassFlash.id + '-fade'}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 1, 1, 0] }}
-          transition={{ duration: 1.5, times: [0, 0.30, 0.65, 1], ease: 'easeInOut' }}
-          style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none', background: '#000' }}
-          onAnimationComplete={() => setGlassFlash(null)}
-        />
-      )}
-
       <AnimatePresence mode="wait">
-        {phase === 'cinematic' && (
-          <CinematicIntro key="cinematic" onDone={() => setPhase('title')} />
+        {phase === 'intro' && (
+          <Intro key="intro" onDone={() => setPhase('title')} />
         )}
         {phase === 'title' && (
-          <TitleScreen key="title" onStart={() => setPhase('transition')} />
+          <TitleScreen key="title" onEnter={() => setPhase('transition')} />
         )}
         {phase === 'transition' && (
           <Transition key="transition" onDone={() => setPhase('main')} />
         )}
-        {phase === 'main' && !section && (
-          <MainPage key="main" onNavigate={handleNavigate} onGlassNav={handleGlassNav} />
-        )}
-        {phase === 'main' && section && (
-          <SectionScreen key={section} id={section} onBack={() => setSection(null)} />
+        {phase === 'main' && (
+          <>
+            {section && (
+              <TopBar key="topbar" currentSection={section} onNavigate={navigate} />
+            )}
+            <AnimatePresence mode="wait">
+              {!section && (
+                <HomeScreen key="home" onNavigate={navigate} />
+              )}
+              {section && ActiveScreen && (
+                <ActiveScreen key={section} />
+              )}
+            </AnimatePresence>
+          </>
         )}
       </AnimatePresence>
     </>
