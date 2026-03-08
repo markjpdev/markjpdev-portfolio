@@ -1,18 +1,20 @@
 # markjp.dev
 
-Personal portfolio website for **Mark Jayson Punsalan (MJP)** — Business Analyst, Application Support Engineer, and aspiring Backend Engineer based in Quezon City, Philippines.
+My personal portfolio — Mark Jayson Punsalan (MJP), based in Quezon City, Philippines.
+
+I work in clinical systems and application support. I'm currently transitioning into backend engineering. This site is part of that journey.
 
 Live at **[markjp.dev](https://markjp.dev)**
 
 ---
 
-## About
+## Honest disclaimer
 
-This portfolio was built using **vibe coding** — a collaborative approach where I directed the design, structure, content, and intent while using **Claude (Anthropic)** as the engineering partner to implement it in code.
+I didn't write the code for this site myself — at least not yet. I built it through **vibe coding** with **Claude (Anthropic)**, where I handled all the decisions: what it looks like, what it says, how it's structured, and what it represents. Claude handled the implementation.
 
-I am not a frontend engineer. I know what I want to build and why. This site is the result of that clarity — not a template, not a tutorial project, but a deliberate creative and professional artifact built from scratch across multiple iterations.
+I'm being upfront about this because I think it matters. I'm not trying to pass this off as something I coded from scratch. What I can say is that every direction, every iteration, and every version came from me knowing what I wanted and pushing until it was right. That process alone taught me a lot.
 
-Every decision about identity, layout, typography, motion, and content is mine. The implementation was a collaboration with AI. This is how I work: I understand systems, I direct outcomes, and I use the best available tools to get there.
+As my actual coding skills grow, this site will reflect that too.
 
 ---
 
@@ -24,25 +26,25 @@ Every decision about identity, layout, typography, motion, and content is mine. 
 | Language | JavaScript |
 | Animation | Framer Motion |
 | Fonts | Cormorant Garamond · Inter · JetBrains Mono · Noto Sans Tagalog |
-| Deployment | Netlify via GitHub auto-deploy |
-| Built with | Claude (Anthropic) — vibe coding |
+| Deployment | Netlify — auto-deploy from this repo |
+| Built with | Claude (Anthropic) |
 
 ---
 
-## Version History
+## Version history
 
-| Version | What Changed |
+| Version | What changed |
 |---------|--------------|
-| v9.8 | Boot sequence, living canvas grid, ambient audio, secret screen, character reveal (About), mastery map (Skills), studio archive (Projects), section flash transitions, nav card hierarchy, Open Graph tags |
-| v9.7 | Section atmospheres, nav card hierarchy, Baybayin watermark, craft philosophy callout, custom cursor, particle system |
-| v7.0 | Final Fantasy cinematic experience — iris-wipe transition, FF title screen, orchestral Web Audio engine, crystal dust particles |
-| v1.0 | Initial dark theme — Next.js 15, geometric MJP monogram |
+| v9.8 | Boot sequence, living canvas grid, ambient audio, secret screen, character reveal (About), mastery map (Skills), studio archive (Projects), section flash, nav hierarchy, Open Graph tags |
+| v9.7 | Section atmospheres, Baybayin watermark, craft philosophy callout, custom cursor, particle system |
+| v7.0 | Full cinematic experience — iris-wipe, FF-style title screen, orchestral Web Audio engine, crystal dust particles |
+| v1.0 | First version — dark theme, Next.js 15, geometric MJP monogram |
 
 ---
 
-## Identity
+## The Baybayin
 
-The **Baybayin** script displayed throughout the site — *ᜋᜍᜃ᜔ ᜇᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔* — is my name written in the pre-colonial Filipino writing system. It is not decoration. It is identity.
+The script you see throughout the site — *ᜋᜍᜃ᜔ ᜇᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔* — is my name in Baybayin, the pre-colonial Filipino writing system. I put it there on purpose. It's not just aesthetic, it's where I'm from.
 
 ---
 
@@ -51,7 +53,3 @@ The **Baybayin** script displayed throughout the site — *ᜋᜍᜃ᜔ ᜇᜒ�
 - **Email** — mark@markjp.dev
 - **LinkedIn** — [in/jaysonpunsalan](https://linkedin.com/in/jaysonpunsalan)
 - **GitHub** — [markjpdev](https://github.com/markjpdev)
-
----
-
-*Filipino-made. Built with intent. Honest about how.*
