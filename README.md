@@ -1,6 +1,6 @@
 # markjp.dev
 
-My personal portfolio — Mark Jayson Punsalan (MJP), based in Quezon City, Philippines.
+This is my personal portfolio — Mark Jayson Punsalan (MJP), based in Quezon City, Philippines.
 
 I work in clinical systems and application support. I'm currently transitioning into backend engineering. This site is part of that journey.
 
@@ -10,7 +10,7 @@ Live at **[markjp.dev](https://markjp.dev)**
 
 ## Honest disclaimer
 
-I didn't write the code for this site myself — at least not yet. I built it through **vibe coding** with **Claude (Anthropic)**, where I handled all the decisions: what it looks like, what it says, how it's structured, and what it represents. Claude handled the implementation.
+I didn't write the code for this site myself, at least not yet. I built it through **vibe coding** with **Claude (Anthropic)**, where I handled all the decisions: what it looks like, what it says, how it's structured, and what it represents. Claude handled the implementation.
 
 I'm being upfront about this because I think it matters. I'm not trying to pass this off as something I coded from scratch. What I can say is that every direction, every iteration, and every version came from me knowing what I wanted and pushing until it was right. That process alone taught me a lot.
 
@@ -44,12 +44,12 @@ As my actual coding skills grow, this site will reflect that too.
 
 ## The Baybayin
 
-The script you see throughout the site — *ᜋᜍᜃ᜔ ᜇᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔* — is my name in Baybayin, the pre-colonial Filipino writing system. I put it there on purpose. It's not just aesthetic, it's where I'm from.
+The script you see throughout the site *ᜋᜍᜃ᜔ ᜇᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔* is my name in Baybayin, the pre-colonial Filipino writing system. I grew up knowing it existed but never seeing it used. Putting it here felt right.
 
 ---
 
 ## Contact
 
-- **Email** — mark@markjp.dev
+- **Email** — markpunsalan@icloud.com
 - **LinkedIn** — [in/jaysonpunsalan](https://linkedin.com/in/jaysonpunsalan)
 - **GitHub** — [markjpdev](https://github.com/markjpdev)
