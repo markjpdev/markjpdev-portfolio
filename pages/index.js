@@ -17,31 +17,21 @@ function VerticalJourney({ visible, hovered, setHovered }) {
       <div style={{ position: 'relative' }}>
         {waypoints.map((wp, i) => {
           const isLast = i === waypoints.length - 1
-          const isFirst = i === 0
           return (
             <div key={wp.label}>
-              {/* Row */}
               <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 18,
-                  padding: '2px 0',
-                  position: 'relative',
-                  zIndex: 1,
-                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '2px 0', position: 'relative', zIndex: 1 }}
                 onMouseEnter={() => visible[i] && setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
                 onTouchStart={() => visible[i] && setHovered(i)}
                 onTouchEnd={() => setTimeout(() => setHovered(null), 1400)}
               >
-                {/* Dot / tick */}
                 <div style={{ width: 16, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
                   {isLast ? (
                     <div style={{
                       width: 8, height: 8, borderRadius: '50%',
                       background: '#c4956a',
-                      boxShadow: visible[i] ? '0 0 0 4px rgba(196,149,106,0.12)' : 'none',
+                      boxShadow: visible[i] ? '0 0 0 4px rgba(196,149,106,0.1)' : 'none',
                       opacity: visible[i] ? 1 : 0,
                       transition: 'opacity 0.5s ease, box-shadow 0.5s ease',
                     }} />
@@ -55,7 +45,6 @@ function VerticalJourney({ visible, hovered, setHovered }) {
                   )}
                 </div>
 
-                {/* Label */}
                 <span style={{
                   fontFamily: 'var(--font-mono), monospace',
                   fontSize: 11,
@@ -70,7 +59,7 @@ function VerticalJourney({ visible, hovered, setHovered }) {
                 </span>
               </div>
 
-              {/* Tooltip — inline below label on mobile */}
+              {/* Tooltip inline on mobile */}
               <div style={{
                 paddingLeft: 34,
                 maxHeight: hovered === i ? 30 : 0,
@@ -79,18 +68,15 @@ function VerticalJourney({ visible, hovered, setHovered }) {
                 transition: 'max-height 0.2s ease, opacity 0.2s ease',
                 fontFamily: 'var(--font-mono), monospace',
                 fontSize: 10,
-                color: 'rgba(240,235,227,0.5)',
+                color: 'rgba(240,235,227,0.45)',
                 letterSpacing: '0.06em',
               }}>
                 {wp.tooltip}
               </div>
 
-              {/* Connector line between rows */}
               {!isLast && (
                 <div style={{
-                  marginLeft: 7,
-                  width: 1.5,
-                  height: 20,
+                  marginLeft: 7, width: 1.5, height: 20,
                   background: 'rgba(240,235,227,0.1)',
                   animation: visible[i] ? `growDown 0.3s ease ${DOT_DELAYS[i] + 300}ms both` : 'none',
                 }} />
@@ -113,7 +99,20 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
         style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
         aria-hidden="true"
       >
+        <defs>
+          <filter id="tip-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Ghost path */}
         <path d={PATH_D} fill="none" stroke="rgba(240,235,227,0.05)" strokeWidth={1.5} strokeLinecap="round" />
+
+        {/* Animated draw */}
         <path
           ref={pathRef}
           d={PATH_D}
@@ -125,6 +124,12 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
           strokeDashoffset={pathLen}
           style={{ animation: 'drawPath 1.8s cubic-bezier(0.4,0,0.2,1) 1s forwards' }}
         />
+
+        {/* Ink tip — travels the path as it draws */}
+        <circle r={3.5} fill="#c4956a" filter="url(#tip-glow)">
+          <animateMotion dur="1.8s" begin="1s" fill="freeze" path={PATH_D} />
+          <animate attributeName="opacity" values="0;0.9;0.9;0" keyTimes="0;0.04;0.86;1" dur="1.8s" begin="1s" fill="freeze" />
+        </circle>
 
         {waypoints.map((wp, i) => {
           const isLast = i === waypoints.length - 1
@@ -138,15 +143,37 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
 
               {isLast ? (
                 <>
-                  <circle cx={wp.x} cy={wp.y} r={10} fill="none" stroke="#c4956a" strokeWidth={0.75}
-                    style={{ opacity: visible[i] ? 0.3 : 0, transition: 'opacity 1s ease' }} />
-                  <circle cx={wp.x} cy={wp.y} r={3.5} fill="#c4956a"
-                    style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }} />
+                  {/* Static ring */}
+                  <circle
+                    cx={wp.x} cy={wp.y} r={10}
+                    fill="none" stroke="#c4956a" strokeWidth={0.75}
+                    style={{ opacity: visible[i] ? 0.2 : 0, transition: 'opacity 1s ease' }}
+                  />
+                  {/* Sonar ping — fires once when dot appears */}
+                  {visible[i] && (
+                    <circle
+                      cx={wp.x} cy={wp.y} r={4}
+                      fill="none" stroke="#c4956a" strokeWidth={0.75}
+                      style={{
+                        animation: 'sonarPing 1.4s ease-out forwards',
+                        transformBox: 'fill-box',
+                        transformOrigin: 'center',
+                      }}
+                    />
+                  )}
+                  {/* Dot */}
+                  <circle
+                    cx={wp.x} cy={wp.y} r={3.5}
+                    fill="#c4956a"
+                    style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
+                  />
                 </>
               ) : (
-                <line x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
+                <line
+                  x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
                   stroke="rgba(240,235,227,0.28)" strokeWidth={1.5} strokeLinecap="round"
-                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }} />
+                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                />
               )}
 
               <text
@@ -174,14 +201,14 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
             left: `${(wp.x / 580) * 100}%`,
             top: `${(wp.y / 200) * 100}%`,
             transform: 'translate(-50%, -210%)',
-            background: 'rgba(13,11,9,0.92)',
-            border: '1px solid rgba(196,149,106,0.2)',
+            background: 'rgba(13,11,9,0.94)',
+            border: '1px solid rgba(196,149,106,0.12)',
             borderRadius: 4,
             padding: '6px 10px',
             fontFamily: 'var(--font-mono), monospace',
             fontSize: 10,
             letterSpacing: '0.06em',
-            color: 'rgba(240,235,227,0.7)',
+            color: 'rgba(240,235,227,0.6)',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
             opacity: hovered === i ? 1 : 0,
@@ -308,6 +335,24 @@ export default function Home() {
             to { stroke-dashoffset: 0; }
           }
 
+          /* Name finds its position */
+          @keyframes settle {
+            from { letter-spacing: 0.01em; opacity: 0; transform: translateY(8px); }
+            to   { letter-spacing: -0.04em; opacity: 1; transform: translateY(0);  }
+          }
+
+          /* Accent line draws from center */
+          @keyframes lineGrow {
+            from { transform: scaleX(0); }
+            to   { transform: scaleX(1); }
+          }
+
+          /* Engineering waypoint — single radar pulse */
+          @keyframes sonarPing {
+            0%   { transform: scale(1);  opacity: 0.6; }
+            100% { transform: scale(9);  opacity: 0;   }
+          }
+
           @keyframes growDown {
             from { height: 0; opacity: 0; }
             to   { height: 20px; opacity: 1; }
@@ -331,17 +376,47 @@ export default function Home() {
         padding: 'clamp(48px, 8vh, 96px) clamp(24px, 6vw, 64px)',
         fontFamily: "var(--font-inter), sans-serif",
         color: '#f0ebe3',
+        position: 'relative',
       }}>
-        <div style={{ maxWidth: 560, width: '100%', textAlign: 'center' }}>
 
-          {/* Name */}
+        {/* Baybayin watermark — cultural identity, fills the negative space */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            zIndex: 0,
+          }}
+        >
+          <div style={{
+            fontFamily: "'Noto Sans Tagalog', serif",
+            fontSize: 'clamp(140px, 26vw, 220px)',
+            color: '#c4956a',
+            opacity: 0.03,
+            letterSpacing: '0.2em',
+            userSelect: 'none',
+            lineHeight: 1,
+            animation: 'fadeUp 2s ease 1s both',
+          }}>
+            ᜋᜍᜃ
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ maxWidth: 560, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+
+          {/* Name — settles into position */}
           <h1 style={{
             fontSize: 'clamp(60px, 12vw, 100px)',
             fontWeight: 900,
-            letterSpacing: '-0.04em',
             lineHeight: 1,
             color: '#f0ebe3',
-            animation: 'fadeUp 0.7s ease 0.2s both',
+            animation: 'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
           }}>
             {meta.title}
           </h1>
@@ -382,16 +457,16 @@ export default function Home() {
                 fontWeight: 300,
               }}>
                 <span style={{
-                  color: 'rgba(240,235,227,0.22)',
+                  color: 'rgba(240,235,227,0.2)',
                   letterSpacing: '0.08em',
                   minWidth: 64,
                   textAlign: 'right',
                 }}>
                   {label}
                 </span>
-                <span style={{ color: '#c4956a', fontSize: 10, opacity: 0.5 }}>—</span>
+                <span style={{ color: 'rgba(196,149,106,0.35)', fontSize: 10 }}>—</span>
                 <span style={{
-                  color: 'rgba(240,235,227,0.55)',
+                  color: 'rgba(240,235,227,0.5)',
                   letterSpacing: '0.04em',
                 }}>
                   {value}
@@ -410,7 +485,7 @@ export default function Home() {
             animation: 'fadeUp 0.7s ease 4.4s both',
           }}>
             {[
-              { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'  },
+              { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'   },
               { icon: <LinkedInIcon />, href: links.linkedin, label: 'LinkedIn' },
               { icon: <CodedexIcon />,  href: links.codedex,  label: 'Codedex'  },
             ].map(({ icon, href, label }) => (
@@ -440,7 +515,7 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Primary CTA */}
+          {/* Primary CTA — copper text, no border */}
           <div style={{ marginTop: 24, animation: 'fadeUp 0.7s ease 4.7s both' }}>
             <a
               href={links.email}
@@ -453,20 +528,11 @@ export default function Home() {
                 fontSize: 12,
                 fontWeight: 300,
                 letterSpacing: '0.08em',
-                color: '#c4956a',
-                border: '1px solid rgba(196,149,106,0.25)',
-                borderRadius: 4,
-                padding: '8px 16px',
-                transition: 'border-color 0.2s ease, background 0.2s ease',
+                color: 'rgba(196,149,106,0.6)',
+                transition: 'color 0.2s ease',
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'rgba(196,149,106,0.6)'
-                e.currentTarget.style.background = 'rgba(196,149,106,0.06)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'rgba(196,149,106,0.25)'
-                e.currentTarget.style.background = 'transparent'
-              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,149,106,0.6)' }}
             >
               <EmailIcon />
               say hello

@@ -31,7 +31,7 @@ export default function Layout({ children }) {
         }}
       />
 
-      {/* Top accent line — design signature */}
+      {/* Top accent line — grows from center outward */}
       <div
         aria-hidden="true"
         style={{
@@ -39,6 +39,8 @@ export default function Layout({ children }) {
           top: 0, left: 0, right: 0,
           height: 2,
           background: '#c4956a',
+          transformOrigin: 'center',
+          animation: 'lineGrow 0.6s cubic-bezier(0.4,0,0.2,1) 0s both',
           zIndex: 9997,
         }}
       />
