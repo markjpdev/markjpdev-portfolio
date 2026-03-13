@@ -1,19 +1,10 @@
 import Head from 'next/head'
 import { useEffect, useRef, useState } from 'react'
+import { meta, tagline, waypoints, status, links } from '../lib/content'
 
 // ─────────────────────────────────────────────
 //  Mark JP — Personal Site
 // ─────────────────────────────────────────────
-
-// Module-level constant — not recreated on render
-const NOISE_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
-
-const WAYPOINTS = [
-  { label: 'Support',     x: 40,  y: 140 },
-  { label: 'Systems',     x: 190, y: 112 },
-  { label: 'Analysis',    x: 370, y: 84  },
-  { label: 'Engineering', x: 540, y: 56  },
-]
 
 const PATH_D = `M 40,140 C 95,144 140,114 190,112 C 245,110 310,86 370,84 C 430,82 480,58 540,56`
 const DOT_DELAYS = [1500, 2200, 2900, 3600]
@@ -21,7 +12,8 @@ const DOT_DELAYS = [1500, 2200, 2900, 3600]
 function JourneyPath() {
   const pathRef = useRef(null)
   const [pathLen, setPathLen] = useState(720)
-  const [visible, setVisible] = useState([false, false, false, false])
+  const [visible, setVisible] = useState(waypoints.map(() => false))
+  const [hovered, setHovered] = useState(null)
 
   useEffect(() => {
     if (pathRef.current) setPathLen(pathRef.current.getTotalLength())
@@ -36,73 +28,116 @@ function JourneyPath() {
   }, [])
 
   return (
-    <svg
-      viewBox="0 0 580 200"
-      style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
-      aria-hidden="true"
-    >
-      {/* Ghost path */}
-      <path
-        d={PATH_D}
-        fill="none"
-        stroke="rgba(240,235,227,0.05)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
+    <div style={{ position: 'relative' }}>
+      <svg
+        viewBox="0 0 580 200"
+        style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
+        aria-hidden="true"
+      >
+        {/* Ghost path */}
+        <path
+          d={PATH_D}
+          fill="none"
+          stroke="rgba(240,235,227,0.05)"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+        />
 
-      {/* Animated draw */}
-      <path
-        ref={pathRef}
-        d={PATH_D}
-        fill="none"
-        stroke="rgba(240,235,227,0.4)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeDasharray={pathLen}
-        strokeDashoffset={pathLen}
-        style={{ animation: 'drawPath 1.8s cubic-bezier(0.4,0,0.2,1) 1s forwards' }}
-      />
+        {/* Animated draw */}
+        <path
+          ref={pathRef}
+          d={PATH_D}
+          fill="none"
+          stroke="rgba(240,235,227,0.4)"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeDasharray={pathLen}
+          strokeDashoffset={pathLen}
+          style={{ animation: 'drawPath 1.8s cubic-bezier(0.4,0,0.2,1) 1s forwards' }}
+        />
 
-      {WAYPOINTS.map((wp, i) => {
-        const isLast = i === WAYPOINTS.length - 1
-        return (
-          <g key={wp.label}>
-            {isLast ? (
-              <>
-                <circle
-                  cx={wp.x} cy={wp.y} r={10}
-                  fill="none" stroke="#c4956a" strokeWidth={0.75}
-                  style={{ opacity: visible[i] ? 0.3 : 0, transition: 'opacity 1s ease' }}
-                />
-                <circle
-                  cx={wp.x} cy={wp.y} r={3.5}
-                  fill="#c4956a"
-                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
-                />
-              </>
-            ) : (
-              <line
-                x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
-                stroke="rgba(240,235,227,0.28)" strokeWidth={1.5} strokeLinecap="round"
-                style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }}
-              />
-            )}
-
-            <text
-              x={wp.x} y={wp.y + 24}
-              textAnchor="middle"
-              fill={isLast ? '#c4956a' : 'rgba(240,235,227,0.25)'}
-              fontSize={isLast ? 11 : 10}
-              fontFamily="var(--font-mono), monospace"
-              letterSpacing="0.1em"
-              style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.7s ease' }}
+        {waypoints.map((wp, i) => {
+          const isLast = i === waypoints.length - 1
+          return (
+            <g
+              key={wp.label}
+              style={{ cursor: visible[i] ? 'default' : 'default' }}
+              onMouseEnter={() => visible[i] && setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
             >
-              {wp.label.toUpperCase()}
-            </text>
-          </g>
+              {/* Hover target — larger invisible hit area */}
+              <circle cx={wp.x} cy={wp.y} r={18} fill="transparent" />
+
+              {isLast ? (
+                <>
+                  <circle
+                    cx={wp.x} cy={wp.y} r={10}
+                    fill="none" stroke="#c4956a" strokeWidth={0.75}
+                    style={{ opacity: visible[i] ? 0.3 : 0, transition: 'opacity 1s ease' }}
+                  />
+                  <circle
+                    cx={wp.x} cy={wp.y} r={3.5}
+                    fill="#c4956a"
+                    style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
+                  />
+                </>
+              ) : (
+                <line
+                  x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
+                  stroke="rgba(240,235,227,0.28)" strokeWidth={1.5} strokeLinecap="round"
+                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                />
+              )}
+
+              <text
+                x={wp.x} y={wp.y + 24}
+                textAnchor="middle"
+                fill={isLast ? '#c4956a' : 'rgba(240,235,227,0.25)'}
+                fontSize={isLast ? 11 : 10}
+                fontFamily="var(--font-mono), monospace"
+                letterSpacing="0.1em"
+                style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.7s ease' }}
+              >
+                {wp.label.toUpperCase()}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+
+      {/* Waypoint tooltips */}
+      {waypoints.map((wp, i) => {
+        const svgWidth = 580
+        // Position tooltip as percentage of container width
+        const leftPct = (wp.x / svgWidth) * 100
+        return (
+          <div
+            key={wp.label}
+            style={{
+              position: 'absolute',
+              left: `${leftPct}%`,
+              top: `${(wp.y / 200) * 100}%`,
+              transform: 'translate(-50%, -200%)',
+              background: 'rgba(13,11,9,0.92)',
+              border: '1px solid rgba(196,149,106,0.2)',
+              borderRadius: 4,
+              padding: '6px 10px',
+              fontFamily: 'var(--font-mono), monospace',
+              fontSize: 10,
+              letterSpacing: '0.06em',
+              color: 'rgba(240,235,227,0.7)',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              opacity: hovered === i ? 1 : 0,
+              transition: 'opacity 0.15s ease',
+              zIndex: 10,
+            }}
+          >
+            {wp.tooltip}
+          </div>
         )
       })}
-    </svg>
+    </div>
   )
 }
 
@@ -132,29 +167,24 @@ const CodedexIcon = () => (
   </svg>
 )
 
-const SOCIAL_LINKS = [
-  { icon: <GitHubIcon />,   href: 'https://github.com/markjpdev',                label: 'GitHub'   },
-  { icon: <LinkedInIcon />, href: 'https://www.linkedin.com/in/jaysonpunsalan/', label: 'LinkedIn' },
-  { icon: <CodedexIcon />,  href: 'https://www.codedex.io/@Bakuryu',             label: 'Codedex'  },
-]
-
 // ── Page ──────────────────────────────────────
 
 export default function Home() {
   return (
     <>
       <Head>
-        <title>Mark JP</title>
-        <meta name="description" content="Software engineer. Started in support." />
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.svg" />
 
-        <meta property="og:title" content="Mark JP" />
-        <meta property="og:description" content="Software engineer. Started in support." />
+        <meta property="og:title" content={meta.title} />
+        <meta property="og:description" content={meta.description} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content={meta.url} />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Mark JP" />
-        <meta name="twitter:description" content="Software engineer. Started in support." />
+        <meta name="twitter:title" content={meta.title} />
+        <meta name="twitter:description" content={meta.description} />
 
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -186,44 +216,6 @@ export default function Home() {
         `}</style>
       </Head>
 
-      {/* Film grain */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundImage: NOISE_URI,
-          opacity: 0.038,
-          pointerEvents: 'none',
-          zIndex: 9999,
-        }}
-      />
-
-      {/* Vignette */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)',
-          pointerEvents: 'none',
-          zIndex: 9998,
-        }}
-      />
-
-      {/* Top accent line — design signature */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0,
-          height: 2,
-          background: '#c4956a',
-          animation: 'fadeUp 0.4s ease 0s both',
-          zIndex: 9997,
-        }}
-      />
-
       <main style={{
         minHeight: '100vh',
         display: 'flex',
@@ -244,7 +236,7 @@ export default function Home() {
             color: '#f0ebe3',
             animation: 'fadeUp 0.7s ease 0.2s both',
           }}>
-            Mark JP
+            {meta.title}
           </h1>
 
           {/* Tagline */}
@@ -257,7 +249,7 @@ export default function Home() {
             letterSpacing: '0.07em',
             animation: 'fadeUp 0.7s ease 0.5s both',
           }}>
-            Software engineer. Started in support.
+            {tagline}
           </p>
 
           {/* Journey path */}
@@ -265,19 +257,41 @@ export default function Home() {
             <JourneyPath />
           </div>
 
-          {/* Now */}
-          <p style={{
-            marginTop: 20,
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 'clamp(11px, 1.4vw, 13px)',
-            fontWeight: 300,
-            color: 'rgba(240,235,227,0.3)',
-            letterSpacing: '0.05em',
+          {/* Status board */}
+          <div style={{
+            marginTop: 32,
+            display: 'inline-flex',
+            flexDirection: 'column',
+            gap: 6,
             animation: 'fadeUp 0.7s ease 4.0s both',
           }}>
-            <span style={{ color: '#c4956a', marginRight: 10, fontSize: '0.8em' }}>◆</span>
-            Now — Python. First project: a game.
-          </p>
+            {status.map(({ label, value }) => (
+              <div key={label} style={{
+                display: 'flex',
+                gap: 16,
+                alignItems: 'baseline',
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 'clamp(10px, 1.3vw, 12px)',
+                fontWeight: 300,
+              }}>
+                <span style={{
+                  color: 'rgba(240,235,227,0.22)',
+                  letterSpacing: '0.08em',
+                  minWidth: 64,
+                  textAlign: 'right',
+                }}>
+                  {label}
+                </span>
+                <span style={{ color: '#c4956a', fontSize: 10, opacity: 0.5 }}>—</span>
+                <span style={{
+                  color: 'rgba(240,235,227,0.55)',
+                  letterSpacing: '0.04em',
+                }}>
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
 
           {/* Social icons */}
           <div style={{
@@ -288,7 +302,11 @@ export default function Home() {
             alignItems: 'center',
             animation: 'fadeUp 0.7s ease 4.4s both',
           }}>
-            {SOCIAL_LINKS.map(({ icon, href, label }) => (
+            {[
+              { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'  },
+              { icon: <LinkedInIcon />, href: links.linkedin, label: 'LinkedIn' },
+              { icon: <CodedexIcon />,  href: links.codedex,  label: 'Codedex'  },
+            ].map(({ icon, href, label }) => (
               <a
                 key={label}
                 href={href}
@@ -318,7 +336,7 @@ export default function Home() {
           {/* Primary CTA */}
           <div style={{ marginTop: 24, animation: 'fadeUp 0.7s ease 4.7s both' }}>
             <a
-              href="mailto:markpunsalan@icloud.com"
+              href={links.email}
               aria-label="Send email"
               style={{
                 display: 'inline-flex',
