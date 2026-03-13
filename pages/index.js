@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from 'react'
 //  Mark JP — Personal Site
 // ─────────────────────────────────────────────
 
+// Module-level constant — not recreated on render
+const NOISE_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+
 const WAYPOINTS = [
   { label: 'Support',     x: 40,  y: 140 },
   { label: 'Systems',     x: 190, y: 112 },
@@ -35,15 +38,10 @@ function JourneyPath() {
   return (
     <svg
       viewBox="0 0 580 200"
-      style={{
-        width: '100%',
-        height: 'auto',
-        overflow: 'visible',
-        display: 'block',
-      }}
+      style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
       aria-hidden="true"
     >
-      {/* Ghost path — full route barely visible */}
+      {/* Ghost path */}
       <path
         d={PATH_D}
         fill="none"
@@ -71,55 +69,33 @@ function JourneyPath() {
           <g key={wp.label}>
             {isLast ? (
               <>
-                {/* Outer ring */}
                 <circle
                   cx={wp.x} cy={wp.y} r={10}
-                  fill="none"
-                  stroke="#c4956a"
-                  strokeWidth={0.75}
-                  style={{
-                    opacity: visible[i] ? 0.3 : 0,
-                    transition: 'opacity 1s ease',
-                  }}
+                  fill="none" stroke="#c4956a" strokeWidth={0.75}
+                  style={{ opacity: visible[i] ? 0.3 : 0, transition: 'opacity 1s ease' }}
                 />
-                {/* Inner dot */}
                 <circle
                   cx={wp.x} cy={wp.y} r={3.5}
                   fill="#c4956a"
-                  style={{
-                    opacity: visible[i] ? 1 : 0,
-                    transition: 'opacity 0.5s ease',
-                  }}
+                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
                 />
               </>
             ) : (
-              /* Tick mark */
               <line
-                x1={wp.x} y1={wp.y - 5}
-                x2={wp.x} y2={wp.y + 5}
-                stroke="rgba(240,235,227,0.28)"
-                strokeWidth={1.5}
-                strokeLinecap="round"
-                style={{
-                  opacity: visible[i] ? 1 : 0,
-                  transition: 'opacity 0.4s ease',
-                }}
+                x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
+                stroke="rgba(240,235,227,0.28)" strokeWidth={1.5} strokeLinecap="round"
+                style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }}
               />
             )}
 
-            {/* Label — below path */}
             <text
-              x={wp.x}
-              y={wp.y + 24}
+              x={wp.x} y={wp.y + 24}
               textAnchor="middle"
               fill={isLast ? '#c4956a' : 'rgba(240,235,227,0.25)'}
               fontSize={isLast ? 11 : 10}
-              fontFamily="'JetBrains Mono', monospace"
+              fontFamily="var(--font-mono), monospace"
               letterSpacing="0.1em"
-              style={{
-                opacity: visible[i] ? 1 : 0,
-                transition: 'opacity 0.7s ease',
-              }}
+              style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.7s ease' }}
             >
               {wp.label.toUpperCase()}
             </text>
@@ -156,11 +132,10 @@ const CodedexIcon = () => (
   </svg>
 )
 
-const LINKS = [
+const SOCIAL_LINKS = [
   { icon: <GitHubIcon />,   href: 'https://github.com/markjpdev',                label: 'GitHub'   },
   { icon: <LinkedInIcon />, href: 'https://www.linkedin.com/in/jaysonpunsalan/', label: 'LinkedIn' },
   { icon: <CodedexIcon />,  href: 'https://www.codedex.io/@Bakuryu',             label: 'Codedex'  },
-  { icon: <EmailIcon />,    href: 'mailto:markpunsalan@icloud.com',              label: 'Email'    },
 ]
 
 // ── Page ──────────────────────────────────────
@@ -203,8 +178,10 @@ export default function Home() {
 
           a { text-decoration: none; color: inherit; }
 
-          @media (max-width: 480px) {
-            .journey-wrap { margin-top: 40px; }
+          :focus-visible {
+            outline: 1.5px solid #c4956a;
+            outline-offset: 4px;
+            border-radius: 3px;
           }
         `}</style>
       </Head>
@@ -215,7 +192,7 @@ export default function Home() {
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundImage: NOISE_URI,
           opacity: 0.038,
           pointerEvents: 'none',
           zIndex: 9999,
@@ -234,20 +211,29 @@ export default function Home() {
         }}
       />
 
+      {/* Top accent line — design signature */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0,
+          height: 2,
+          background: '#c4956a',
+          animation: 'fadeUp 0.4s ease 0s both',
+          zIndex: 9997,
+        }}
+      />
+
       <main style={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 'clamp(48px, 8vh, 96px) clamp(24px, 6vw, 64px)',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--font-inter), sans-serif",
         color: '#f0ebe3',
       }}>
-        <div style={{
-          maxWidth: 560,
-          width: '100%',
-          textAlign: 'center',
-        }}>
+        <div style={{ maxWidth: 560, width: '100%', textAlign: 'center' }}>
 
           {/* Name */}
           <h1 style={{
@@ -256,7 +242,7 @@ export default function Home() {
             letterSpacing: '-0.04em',
             lineHeight: 1,
             color: '#f0ebe3',
-            animation: 'fadeUp 0.7s ease 0.1s both',
+            animation: 'fadeUp 0.7s ease 0.2s both',
           }}>
             Mark JP
           </h1>
@@ -264,58 +250,53 @@ export default function Home() {
           {/* Tagline */}
           <p style={{
             marginTop: 18,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono), monospace",
             fontSize: 'clamp(11px, 1.5vw, 13px)',
             fontWeight: 300,
             color: 'rgba(240,235,227,0.36)',
             letterSpacing: '0.07em',
-            animation: 'fadeUp 0.7s ease 0.45s both',
+            animation: 'fadeUp 0.7s ease 0.5s both',
           }}>
             Software engineer. Started in support.
           </p>
 
           {/* Journey path */}
-          <div
-            className="journey-wrap"
-            style={{
-              marginTop: 56,
-              animation: 'fadeUp 0.6s ease 0.9s both',
-            }}
-          >
+          <div style={{ marginTop: 56, animation: 'fadeUp 0.6s ease 0.9s both' }}>
             <JourneyPath />
           </div>
 
           {/* Now */}
           <p style={{
             marginTop: 20,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono), monospace",
             fontSize: 'clamp(11px, 1.4vw, 13px)',
             fontWeight: 300,
             color: 'rgba(240,235,227,0.3)',
             letterSpacing: '0.05em',
-            animation: 'fadeUp 0.7s ease 4.2s both',
+            animation: 'fadeUp 0.7s ease 4.0s both',
           }}>
-            <span style={{ color: '#c4956a', marginRight: 10, fontSize: '0.85em' }}>◆</span>
+            <span style={{ color: '#c4956a', marginRight: 10, fontSize: '0.8em' }}>◆</span>
             Now — Python. First project: a game.
           </p>
 
-          {/* Icon row */}
+          {/* Social icons */}
           <div style={{
             marginTop: 52,
             display: 'flex',
             gap: 32,
             justifyContent: 'center',
-            animation: 'fadeUp 0.7s ease 4.6s both',
+            alignItems: 'center',
+            animation: 'fadeUp 0.7s ease 4.4s both',
           }}>
-            {LINKS.map(({ icon, href, label }) => (
+            {SOCIAL_LINKS.map(({ icon, href, label }) => (
               <a
                 key={label}
                 href={href}
                 aria-label={label}
-                target={label !== 'Email' ? '_blank' : undefined}
+                target="_blank"
                 rel="noreferrer"
                 style={{
-                  color: 'rgba(240,235,227,0.25)',
+                  color: 'rgba(240,235,227,0.4)',
                   transition: 'color 0.2s ease, transform 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
@@ -325,13 +306,46 @@ export default function Home() {
                   e.currentTarget.style.transform = 'translateY(-2px)'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(240,235,227,0.25)'
+                  e.currentTarget.style.color = 'rgba(240,235,227,0.4)'
                   e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
                 {icon}
               </a>
             ))}
+          </div>
+
+          {/* Primary CTA */}
+          <div style={{ marginTop: 24, animation: 'fadeUp 0.7s ease 4.7s both' }}>
+            <a
+              href="mailto:markpunsalan@icloud.com"
+              aria-label="Send email"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 12,
+                fontWeight: 300,
+                letterSpacing: '0.08em',
+                color: '#c4956a',
+                border: '1px solid rgba(196,149,106,0.25)',
+                borderRadius: 4,
+                padding: '8px 16px',
+                transition: 'border-color 0.2s ease, background 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'rgba(196,149,106,0.6)'
+                e.currentTarget.style.background = 'rgba(196,149,106,0.06)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(196,149,106,0.25)'
+                e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              <EmailIcon />
+              say hello
+            </a>
           </div>
 
         </div>
