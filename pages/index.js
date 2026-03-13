@@ -9,6 +9,13 @@ import { meta, tagline, waypoints, status, links } from '../lib/content'
 const PATH_D = `M 40,140 C 95,144 140,114 190,112 C 245,110 310,86 370,84 C 430,82 480,58 540,56`
 const DOT_DELAYS = [1500, 2200, 2900, 3600]
 
+// Ambient particle data — fixed positions in negative space
+const PARTICLES = [
+  { x: '8vw',   y: '30vh', delay: 0,    dur: 18 },
+  { x: '88vw',  y: '55vh', delay: 6,    dur: 22 },
+  { x: '14vw',  y: '72vh', delay: 12,   dur: 15 },
+]
+
 // ── Mobile: vertical timeline ─────────────────
 
 function VerticalJourney({ visible, hovered, setHovered }) {
@@ -183,7 +190,11 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
                 fontSize={isLast ? 11 : 10}
                 fontFamily="var(--font-mono), monospace"
                 letterSpacing="0.1em"
-                style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.7s ease' }}
+                style={{
+                  opacity: visible[i] ? 1 : 0,
+                  transition: 'opacity 0.7s ease, transform 0.18s ease',
+                  transform: hovered === i ? 'translateY(-2px)' : 'translateY(0)',
+                }}
               >
                 {wp.label.toUpperCase()}
               </text>
@@ -192,7 +203,7 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
         })}
       </svg>
 
-      {/* Tooltips */}
+      {/* Tooltips — no border */}
       {waypoints.map((wp, i) => (
         <div
           key={wp.label}
@@ -202,7 +213,6 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
             top: `${(wp.y / 200) * 100}%`,
             transform: 'translate(-50%, -210%)',
             background: 'rgba(13,11,9,0.94)',
-            border: '1px solid rgba(196,149,106,0.12)',
             borderRadius: 4,
             padding: '6px 10px',
             fontFamily: 'var(--font-mono), monospace',
@@ -295,6 +305,51 @@ const CodedexIcon = () => (
 // ── Page ──────────────────────────────────────
 
 export default function Home() {
+  const h1Ref = useRef(null)
+  const iconRefs = useRef([])
+
+  // Consolidated mouse tracking: name parallax + magnetic icons
+  useEffect(() => {
+    const handleMouse = (e) => {
+      const cx = window.innerWidth / 2
+      const cy = window.innerHeight / 2
+      const nx = (e.clientX - cx) / cx  // -1 to 1
+      const ny = (e.clientY - cy) / cy
+
+      // Name depth parallax ±5px
+      if (h1Ref.current) {
+        h1Ref.current.style.transform = `translate(${nx * 5}px, ${ny * 5}px)`
+      }
+
+      // Magnetic icon attraction
+      iconRefs.current.forEach(el => {
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        const icx = rect.left + rect.width / 2
+        const icy = rect.top + rect.height / 2
+        const dx = e.clientX - icx
+        const dy = e.clientY - icy
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        const threshold = 80
+        if (dist < threshold) {
+          const pull = (1 - dist / threshold) * 6
+          el.style.transform = `translate(${(dx / dist) * pull}px, ${(dy / dist) * pull}px)`
+        } else {
+          el.style.transform = 'translate(0, 0)'
+        }
+      })
+    }
+
+    window.addEventListener('mousemove', handleMouse, { passive: true })
+    return () => window.removeEventListener('mousemove', handleMouse)
+  }, [])
+
+  const socialLinks = [
+    { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'   },
+    { icon: <LinkedInIcon />, href: links.linkedin, label: 'LinkedIn' },
+    { icon: <CodedexIcon />,  href: links.codedex,  label: 'Codedex'  },
+  ]
+
   return (
     <>
       <Head>
@@ -358,11 +413,38 @@ export default function Home() {
             to   { height: 20px; opacity: 1; }
           }
 
-          a { text-decoration: none; color: inherit; }
+          /* Terminal cursor blink */
+          @keyframes blink {
+            0%, 49% { opacity: 0.7; }
+            50%, 100% { opacity: 0; }
+          }
 
-          /* Baybayin only in margin — hidden on mobile where no margin exists */
-          .baybayin-mark { display: block; }
-          @media (max-width: 768px) { .baybayin-mark { display: none; } }
+          /* Ambient particle drift */
+          @keyframes drift0 {
+            0%   { transform: translate(0, 0)      opacity: 0; }
+            10%  { opacity: 1; }
+            45%  { transform: translate(12px, -28px); }
+            55%  { transform: translate(18px, -22px); }
+            90%  { opacity: 0.6; }
+            100% { transform: translate(8px, -40px);  opacity: 0; }
+          }
+          @keyframes drift1 {
+            0%   { transform: translate(0, 0);     opacity: 0; }
+            10%  { opacity: 0.8; }
+            40%  { transform: translate(-14px, -20px); }
+            60%  { transform: translate(-8px,  -32px); }
+            90%  { opacity: 0.5; }
+            100% { transform: translate(-18px, -44px); opacity: 0; }
+          }
+          @keyframes drift2 {
+            0%   { transform: translate(0, 0);      opacity: 0; }
+            12%  { opacity: 0.6; }
+            50%  { transform: translate(10px, -18px); }
+            88%  { opacity: 0.4; }
+            100% { transform: translate(6px,  -36px);  opacity: 0; }
+          }
+
+          a { text-decoration: none; color: inherit; }
 
           :focus-visible {
             outline: 1.5px solid #c4956a;
@@ -371,6 +453,27 @@ export default function Home() {
           }
         `}</style>
       </Head>
+
+      {/* Ambient particles — drifting copper motes in negative space */}
+      {PARTICLES.map((p, i) => (
+        <div
+          key={i}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: p.x,
+            top: p.y,
+            width: 2,
+            height: 2,
+            borderRadius: '50%',
+            background: '#c4956a',
+            boxShadow: '0 0 4px 1px rgba(196,149,106,0.4)',
+            animation: `drift${i} ${p.dur}s ease-in-out ${p.delay}s infinite`,
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
+      ))}
 
       <main style={{
         minHeight: '100vh',
@@ -383,20 +486,24 @@ export default function Home() {
         position: 'relative',
       }}>
 
-
         {/* Content */}
         <div style={{ maxWidth: 560, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
 
-          {/* Name — Cormorant display serif, settles into position */}
-          <h1 style={{
-            fontFamily: "var(--font-display), serif",
-            fontSize: 'clamp(72px, 13vw, 116px)',
-            fontWeight: 700,
-            lineHeight: 0.95,
-            letterSpacing: '-0.02em',
-            color: '#f0ebe3',
-            animation: 'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
-          }}>
+          {/* Name — Cormorant display serif, settles into position, depth parallax */}
+          <h1
+            ref={h1Ref}
+            style={{
+              fontFamily: "var(--font-display), serif",
+              fontSize: 'clamp(72px, 13vw, 116px)',
+              fontWeight: 700,
+              lineHeight: 0.95,
+              letterSpacing: '-0.02em',
+              color: '#f0ebe3',
+              animation: 'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
+              willChange: 'transform',
+              transition: 'transform 0.1s ease-out',
+            }}
+          >
             {meta.title}
           </h1>
 
@@ -426,7 +533,7 @@ export default function Home() {
             gap: 6,
             animation: 'fadeUp 0.7s ease 4.0s both',
           }}>
-            {status.map(({ label, value }) => (
+            {status.map(({ label, value }, idx) => (
               <div key={label} style={{
                 display: 'flex',
                 gap: 16,
@@ -449,12 +556,21 @@ export default function Home() {
                   letterSpacing: '0.04em',
                 }}>
                   {value}
+                  {/* Terminal blink cursor after last status row */}
+                  {idx === status.length - 1 && (
+                    <span style={{
+                      marginLeft: 3,
+                      color: 'rgba(196,149,106,0.7)',
+                      animation: 'blink 1.1s step-end infinite',
+                      fontWeight: 300,
+                    }}>▌</span>
+                  )}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Social icons */}
+          {/* Social icons — magnetic */}
           <div style={{
             marginTop: 52,
             display: 'flex',
@@ -463,30 +579,25 @@ export default function Home() {
             alignItems: 'center',
             animation: 'fadeUp 0.7s ease 4.4s both',
           }}>
-            {[
-              { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'   },
-              { icon: <LinkedInIcon />, href: links.linkedin, label: 'LinkedIn' },
-              { icon: <CodedexIcon />,  href: links.codedex,  label: 'Codedex'  },
-            ].map(({ icon, href, label }) => (
+            {socialLinks.map(({ icon, href, label }, i) => (
               <a
                 key={label}
                 href={href}
                 aria-label={label}
                 target="_blank"
                 rel="noreferrer"
+                ref={el => { iconRefs.current[i] = el }}
                 style={{
                   color: 'rgba(240,235,227,0.4)',
-                  transition: 'color 0.2s ease, transform 0.2s ease',
+                  transition: 'color 0.2s ease, transform 0.15s ease-out',
                   display: 'flex',
                   alignItems: 'center',
+                  willChange: 'transform',
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = '#c4956a'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
                 onMouseLeave={e => {
                   e.currentTarget.style.color = 'rgba(240,235,227,0.4)'
-                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.transform = 'translate(0, 0)'
                 }}
               >
                 {icon}
