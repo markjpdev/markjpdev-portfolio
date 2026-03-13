@@ -1,6 +1,6 @@
 import Script from 'next/script'
 import { useEffect } from 'react'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono, Cormorant } from 'next/font/google'
 import Layout from '../components/Layout'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Cursor from '../components/Cursor'
@@ -16,6 +16,13 @@ const mono = JetBrains_Mono({
   weight: ['300'],
   subsets: ['latin'],
   variable: '--font-mono',
+  display: 'swap',
+})
+
+const display = Cormorant({
+  weight: ['700'],
+  subsets: ['latin'],
+  variable: '--font-display',
   display: 'swap',
 })
 
@@ -36,7 +43,7 @@ export default function App({ Component, pageProps }) {
   }, [])
 
   return (
-    <div className={`${inter.variable} ${mono.variable}`}>
+    <div className={`${inter.variable} ${mono.variable} ${display.variable}`}>
       {/* Google Analytics — activates only when NEXT_PUBLIC_GA_ID is set */}
       {GA_ID && (
         <>

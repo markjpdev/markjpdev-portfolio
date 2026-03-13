@@ -337,8 +337,8 @@ export default function Home() {
 
           /* Name finds its position */
           @keyframes settle {
-            from { letter-spacing: 0.01em; opacity: 0; transform: translateY(8px); }
-            to   { letter-spacing: -0.04em; opacity: 1; transform: translateY(0);  }
+            from { letter-spacing: 0.04em; opacity: 0; transform: translateY(8px); }
+            to   { letter-spacing: -0.02em; opacity: 1; transform: translateY(0);  }
           }
 
           /* Accent line draws from center */
@@ -395,13 +395,13 @@ export default function Home() {
         >
           <div style={{
             fontFamily: "'Noto Sans Tagalog', serif",
-            fontSize: 'clamp(140px, 26vw, 220px)',
+            fontSize: 'clamp(88px, 16vw, 140px)',
             color: '#c4956a',
-            opacity: 0.03,
-            letterSpacing: '0.2em',
+            opacity: 0.016,
+            letterSpacing: '0.25em',
             userSelect: 'none',
             lineHeight: 1,
-            animation: 'fadeUp 2s ease 1s both',
+            animation: 'fadeUp 2.5s ease 1.5s both',
           }}>
             ᜋᜍᜃ
           </div>
@@ -410,11 +410,13 @@ export default function Home() {
         {/* Content */}
         <div style={{ maxWidth: 560, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
 
-          {/* Name — settles into position */}
+          {/* Name — Cormorant display serif, settles into position */}
           <h1 style={{
-            fontSize: 'clamp(60px, 12vw, 100px)',
-            fontWeight: 900,
-            lineHeight: 1,
+            fontFamily: "var(--font-display), serif",
+            fontSize: 'clamp(72px, 13vw, 116px)',
+            fontWeight: 700,
+            lineHeight: 0.95,
+            letterSpacing: '-0.02em',
             color: '#f0ebe3',
             animation: 'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
           }}>
