@@ -9,24 +9,103 @@ import { meta, tagline, waypoints, status, links } from '../lib/content'
 const PATH_D = `M 40,140 C 95,144 140,114 190,112 C 245,110 310,86 370,84 C 430,82 480,58 540,56`
 const DOT_DELAYS = [1500, 2200, 2900, 3600]
 
-function JourneyPath() {
-  const pathRef = useRef(null)
-  const [pathLen, setPathLen] = useState(720)
-  const [visible, setVisible] = useState(waypoints.map(() => false))
-  const [hovered, setHovered] = useState(null)
+// ── Mobile: vertical timeline ─────────────────
 
-  useEffect(() => {
-    if (pathRef.current) setPathLen(pathRef.current.getTotalLength())
-  }, [])
+function VerticalJourney({ visible, hovered, setHovered }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ position: 'relative' }}>
+        {waypoints.map((wp, i) => {
+          const isLast = i === waypoints.length - 1
+          const isFirst = i === 0
+          return (
+            <div key={wp.label}>
+              {/* Row */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 18,
+                  padding: '2px 0',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+                onMouseEnter={() => visible[i] && setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                onTouchStart={() => visible[i] && setHovered(i)}
+                onTouchEnd={() => setTimeout(() => setHovered(null), 1400)}
+              >
+                {/* Dot / tick */}
+                <div style={{ width: 16, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                  {isLast ? (
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: '#c4956a',
+                      boxShadow: visible[i] ? '0 0 0 4px rgba(196,149,106,0.12)' : 'none',
+                      opacity: visible[i] ? 1 : 0,
+                      transition: 'opacity 0.5s ease, box-shadow 0.5s ease',
+                    }} />
+                  ) : (
+                    <div style={{
+                      width: 1.5, height: 10,
+                      background: 'rgba(240,235,227,0.28)',
+                      opacity: visible[i] ? 1 : 0,
+                      transition: 'opacity 0.4s ease',
+                    }} />
+                  )}
+                </div>
 
-  useEffect(() => {
-    const timers = DOT_DELAYS.map((delay, i) =>
-      setTimeout(() =>
-        setVisible(prev => { const n = [...prev]; n[i] = true; return n }), delay)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [])
+                {/* Label */}
+                <span style={{
+                  fontFamily: 'var(--font-mono), monospace',
+                  fontSize: 11,
+                  letterSpacing: '0.1em',
+                  color: isLast ? '#c4956a' : 'rgba(240,235,227,0.25)',
+                  opacity: visible[i] ? 1 : 0,
+                  transition: 'opacity 0.7s ease',
+                  minWidth: 100,
+                  textAlign: 'left',
+                }}>
+                  {wp.label.toUpperCase()}
+                </span>
+              </div>
 
+              {/* Tooltip — inline below label on mobile */}
+              <div style={{
+                paddingLeft: 34,
+                maxHeight: hovered === i ? 30 : 0,
+                overflow: 'hidden',
+                opacity: hovered === i ? 1 : 0,
+                transition: 'max-height 0.2s ease, opacity 0.2s ease',
+                fontFamily: 'var(--font-mono), monospace',
+                fontSize: 10,
+                color: 'rgba(240,235,227,0.5)',
+                letterSpacing: '0.06em',
+              }}>
+                {wp.tooltip}
+              </div>
+
+              {/* Connector line between rows */}
+              {!isLast && (
+                <div style={{
+                  marginLeft: 7,
+                  width: 1.5,
+                  height: 20,
+                  background: 'rgba(240,235,227,0.1)',
+                  animation: visible[i] ? `growDown 0.3s ease ${DOT_DELAYS[i] + 300}ms both` : 'none',
+                }} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Desktop: horizontal SVG path ─────────────
+
+function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
   return (
     <div style={{ position: 'relative' }}>
       <svg
@@ -34,16 +113,7 @@ function JourneyPath() {
         style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
         aria-hidden="true"
       >
-        {/* Ghost path */}
-        <path
-          d={PATH_D}
-          fill="none"
-          stroke="rgba(240,235,227,0.05)"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-        />
-
-        {/* Animated draw */}
+        <path d={PATH_D} fill="none" stroke="rgba(240,235,227,0.05)" strokeWidth={1.5} strokeLinecap="round" />
         <path
           ref={pathRef}
           d={PATH_D}
@@ -61,32 +131,22 @@ function JourneyPath() {
           return (
             <g
               key={wp.label}
-              style={{ cursor: visible[i] ? 'default' : 'default' }}
               onMouseEnter={() => visible[i] && setHovered(i)}
               onMouseLeave={() => setHovered(null)}
             >
-              {/* Hover target — larger invisible hit area */}
               <circle cx={wp.x} cy={wp.y} r={18} fill="transparent" />
 
               {isLast ? (
                 <>
-                  <circle
-                    cx={wp.x} cy={wp.y} r={10}
-                    fill="none" stroke="#c4956a" strokeWidth={0.75}
-                    style={{ opacity: visible[i] ? 0.3 : 0, transition: 'opacity 1s ease' }}
-                  />
-                  <circle
-                    cx={wp.x} cy={wp.y} r={3.5}
-                    fill="#c4956a"
-                    style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
-                  />
+                  <circle cx={wp.x} cy={wp.y} r={10} fill="none" stroke="#c4956a" strokeWidth={0.75}
+                    style={{ opacity: visible[i] ? 0.3 : 0, transition: 'opacity 1s ease' }} />
+                  <circle cx={wp.x} cy={wp.y} r={3.5} fill="#c4956a"
+                    style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }} />
                 </>
               ) : (
-                <line
-                  x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
+                <line x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
                   stroke="rgba(240,235,227,0.28)" strokeWidth={1.5} strokeLinecap="round"
-                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }}
-                />
+                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }} />
               )}
 
               <text
@@ -105,39 +165,77 @@ function JourneyPath() {
         })}
       </svg>
 
-      {/* Waypoint tooltips */}
-      {waypoints.map((wp, i) => {
-        const svgWidth = 580
-        // Position tooltip as percentage of container width
-        const leftPct = (wp.x / svgWidth) * 100
-        return (
-          <div
-            key={wp.label}
-            style={{
-              position: 'absolute',
-              left: `${leftPct}%`,
-              top: `${(wp.y / 200) * 100}%`,
-              transform: 'translate(-50%, -200%)',
-              background: 'rgba(13,11,9,0.92)',
-              border: '1px solid rgba(196,149,106,0.2)',
-              borderRadius: 4,
-              padding: '6px 10px',
-              fontFamily: 'var(--font-mono), monospace',
-              fontSize: 10,
-              letterSpacing: '0.06em',
-              color: 'rgba(240,235,227,0.7)',
-              whiteSpace: 'nowrap',
-              pointerEvents: 'none',
-              opacity: hovered === i ? 1 : 0,
-              transition: 'opacity 0.15s ease',
-              zIndex: 10,
-            }}
-          >
-            {wp.tooltip}
-          </div>
-        )
-      })}
+      {/* Tooltips */}
+      {waypoints.map((wp, i) => (
+        <div
+          key={wp.label}
+          style={{
+            position: 'absolute',
+            left: `${(wp.x / 580) * 100}%`,
+            top: `${(wp.y / 200) * 100}%`,
+            transform: 'translate(-50%, -210%)',
+            background: 'rgba(13,11,9,0.92)',
+            border: '1px solid rgba(196,149,106,0.2)',
+            borderRadius: 4,
+            padding: '6px 10px',
+            fontFamily: 'var(--font-mono), monospace',
+            fontSize: 10,
+            letterSpacing: '0.06em',
+            color: 'rgba(240,235,227,0.7)',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            opacity: hovered === i ? 1 : 0,
+            transition: 'opacity 0.15s ease',
+            zIndex: 10,
+          }}
+        >
+          {wp.tooltip}
+        </div>
+      ))}
     </div>
+  )
+}
+
+// ── Responsive wrapper ────────────────────────
+
+function JourneyPath() {
+  const pathRef = useRef(null)
+  const [pathLen, setPathLen] = useState(720)
+  const [visible, setVisible] = useState(waypoints.map(() => false))
+  const [hovered, setHovered] = useState(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 560)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    if (pathRef.current) setPathLen(pathRef.current.getTotalLength())
+  }, [isMobile])
+
+  useEffect(() => {
+    const timers = DOT_DELAYS.map((delay, i) =>
+      setTimeout(() =>
+        setVisible(prev => { const n = [...prev]; n[i] = true; return n }), delay)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
+  if (isMobile) {
+    return <VerticalJourney visible={visible} hovered={hovered} setHovered={setHovered} />
+  }
+
+  return (
+    <HorizontalJourney
+      visible={visible}
+      hovered={hovered}
+      setHovered={setHovered}
+      pathLen={pathLen}
+      pathRef={pathRef}
+    />
   )
 }
 
@@ -197,6 +295,10 @@ export default function Home() {
             -moz-osx-font-smoothing: grayscale;
           }
 
+          @media (hover: hover) {
+            html, body, * { cursor: none !important; }
+          }
+
           @keyframes fadeUp {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0);   }
@@ -204,6 +306,11 @@ export default function Home() {
 
           @keyframes drawPath {
             to { stroke-dashoffset: 0; }
+          }
+
+          @keyframes growDown {
+            from { height: 0; opacity: 0; }
+            to   { height: 20px; opacity: 1; }
           }
 
           a { text-decoration: none; color: inherit; }

@@ -2,6 +2,7 @@ import Script from 'next/script'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import Layout from '../components/Layout'
 import ErrorBoundary from '../components/ErrorBoundary'
+import Cursor from '../components/Cursor'
 
 const inter = Inter({
   weight: ['900'],
@@ -38,6 +39,7 @@ export default function App({ Component, pageProps }) {
         </>
       )}
 
+      <Cursor />
       <ErrorBoundary>
         <Layout>
           <Component {...pageProps} />
