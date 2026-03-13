@@ -360,6 +360,10 @@ export default function Home() {
 
           a { text-decoration: none; color: inherit; }
 
+          /* Baybayin only in margin — hidden on mobile where no margin exists */
+          .baybayin-mark { display: block; }
+          @media (max-width: 768px) { .baybayin-mark { display: none; } }
+
           :focus-visible {
             outline: 1.5px solid #c4956a;
             outline-offset: 4px;
@@ -379,32 +383,27 @@ export default function Home() {
         position: 'relative',
       }}>
 
-        {/* Baybayin watermark — cultural identity, fills the negative space */}
+        {/* Baybayin — left margin, vertical, like marginalia in a manuscript */}
         <div
           aria-hidden="true"
+          className="baybayin-mark"
           style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            position: 'fixed',
+            left: 'clamp(12px, 2.5vw, 32px)',
+            top: '50%',
+            transform: 'translateY(-50%) rotate(-90deg)',
+            fontFamily: "'Noto Sans Tagalog', serif",
+            fontSize: 13,
+            color: '#c4956a',
+            opacity: 0.22,
+            letterSpacing: '0.3em',
+            userSelect: 'none',
             pointerEvents: 'none',
-            overflow: 'hidden',
-            zIndex: 0,
+            zIndex: 2,
+            animation: 'fadeUp 1s ease 5s both',
           }}
         >
-          <div style={{
-            fontFamily: "'Noto Sans Tagalog', serif",
-            fontSize: 'clamp(88px, 16vw, 140px)',
-            color: '#c4956a',
-            opacity: 0.016,
-            letterSpacing: '0.25em',
-            userSelect: 'none',
-            lineHeight: 1,
-            animation: 'fadeUp 2.5s ease 1.5s both',
-          }}>
-            ᜋᜍᜃ
-          </div>
+          ᜋᜍᜃ
         </div>
 
         {/* Content */}
