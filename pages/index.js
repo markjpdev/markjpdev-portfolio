@@ -375,36 +375,14 @@ export default function Home() {
       <main style={{
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: 'clamp(48px, 8vh, 96px) clamp(24px, 6vw, 64px)',
+        padding: 'clamp(120px, 22vh, 200px) clamp(24px, 6vw, 64px) clamp(48px, 8vh, 96px)',
         fontFamily: "var(--font-inter), sans-serif",
         color: '#f0ebe3',
         position: 'relative',
       }}>
 
-        {/* Baybayin — left margin, vertical, like marginalia in a manuscript */}
-        <div
-          aria-hidden="true"
-          className="baybayin-mark"
-          style={{
-            position: 'fixed',
-            left: 'clamp(12px, 2.5vw, 32px)',
-            top: '50%',
-            transform: 'translateY(-50%) rotate(-90deg)',
-            fontFamily: "'Noto Sans Tagalog', serif",
-            fontSize: 13,
-            color: '#c4956a',
-            opacity: 0.22,
-            letterSpacing: '0.3em',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            zIndex: 2,
-            animation: 'fadeUp 1s ease 5s both',
-          }}
-        >
-          ᜋᜍᜃ
-        </div>
 
         {/* Content */}
         <div style={{ maxWidth: 560, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
