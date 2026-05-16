@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useRef, useState } from 'react'
-import { meta, tagline, waypoints, status, links } from '../lib/content'
+import { meta, tagline, waypoints, status, links, about, projects, skills } from '../lib/content'
+import Nav from '../components/Nav'
+import ScrollReveal from '../components/ScrollReveal'
 
 // ─────────────────────────────────────────────
 //  Mark JP — Personal Site
@@ -8,13 +10,177 @@ import { meta, tagline, waypoints, status, links } from '../lib/content'
 
 const PATH_D = `M 40,140 C 95,144 140,114 190,112 C 245,110 310,86 370,84 C 430,82 480,58 540,56`
 const DOT_DELAYS = [1500, 2200, 2900, 3600]
+const SECTION_IDS = ['hero', 'about', 'projects', 'skills']
 
-// Ambient particle data — fixed positions in negative space
 const PARTICLES = [
-  { x: '8vw',   y: '30vh', delay: 0,    dur: 18 },
-  { x: '88vw',  y: '55vh', delay: 6,    dur: 22 },
-  { x: '14vw',  y: '72vh', delay: 12,   dur: 15 },
+  { x: '8vw',   y: '30vh', delay: 0,  dur: 18 },
+  { x: '88vw',  y: '55vh', delay: 6,  dur: 22 },
+  { x: '14vw',  y: '72vh', delay: 12, dur: 15 },
 ]
+
+// ── Section Header ────────────────────────────
+
+function SectionHeader({ number, title }) {
+  return (
+    <div style={{ marginBottom: 40 }}>
+      <span style={{
+        fontFamily:    'var(--font-mono), monospace',
+        fontSize:      10,
+        letterSpacing: '0.14em',
+        color:         'rgba(196,149,106,0.5)',
+        fontWeight:    300,
+      }}>
+        {number}
+      </span>
+      <h2 style={{
+        fontFamily:    'var(--font-display), serif',
+        fontSize:      'clamp(32px, 5vw, 52px)',
+        fontWeight:    700,
+        letterSpacing: '-0.02em',
+        color:         '#f0ebe3',
+        marginTop:     4,
+        lineHeight:    1,
+      }}>
+        {title}
+      </h2>
+      <div style={{ marginTop: 16, height: 1, background: 'rgba(240,235,227,0.06)' }} />
+    </div>
+  )
+}
+
+// ── Project Card ──────────────────────────────
+
+function ProjectCard({ project: p }) {
+  const [hovered, setHovered] = useState(false)
+
+  const statusColor  = p.status === 'building' ? 'rgba(196,149,106,0.75)' : 'rgba(130,180,130,0.65)'
+  const statusBg     = p.status === 'building' ? 'rgba(196,149,106,0.08)' : 'rgba(130,180,130,0.08)'
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderLeft: `2px solid ${hovered ? '#c4956a' : 'rgba(196,149,106,0.18)'}`,
+        paddingLeft: 20,
+        transform:   hovered ? 'translateX(4px)' : 'translateX(0)',
+        transition:  'border-left-color 0.25s ease, transform 0.25s ease',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <span style={{
+          fontFamily:    'var(--font-mono), monospace',
+          fontSize:      10,
+          letterSpacing: '0.1em',
+          color:         'rgba(196,149,106,0.55)',
+          fontWeight:    300,
+        }}>
+          {p.tag}
+        </span>
+        <span style={{
+          fontFamily:    'var(--font-mono), monospace',
+          fontSize:      9,
+          letterSpacing: '0.1em',
+          color:         statusColor,
+          background:    statusBg,
+          padding:       '2px 7px',
+          borderRadius:  2,
+          fontWeight:    300,
+        }}>
+          {p.status}
+        </span>
+      </div>
+
+      <h3 style={{
+        fontFamily:    'var(--font-display), serif',
+        fontSize:      'clamp(22px, 3vw, 28px)',
+        fontWeight:    700,
+        letterSpacing: '-0.02em',
+        color:         '#f0ebe3',
+        marginBottom:  10,
+        lineHeight:    1.1,
+      }}>
+        {p.name}
+      </h3>
+
+      <p style={{
+        fontFamily: 'var(--font-inter), sans-serif',
+        fontSize:   13,
+        fontWeight: 400,
+        lineHeight: 1.75,
+        color:      'rgba(240,235,227,0.45)',
+        marginBottom: 16,
+      }}>
+        {p.description}
+      </p>
+
+      <a
+        href={p.github}
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          display:        'inline-flex',
+          alignItems:     'center',
+          gap:            6,
+          fontFamily:     'var(--font-mono), monospace',
+          fontSize:       10,
+          letterSpacing:  '0.1em',
+          color:          hovered ? '#c4956a' : 'rgba(240,235,227,0.3)',
+          textDecoration: 'none',
+          transition:     'color 0.2s ease',
+        }}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" width={12} height={12} aria-hidden="true">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+        </svg>
+        view on github
+      </a>
+    </div>
+  )
+}
+
+// ── Skill Group ───────────────────────────────
+
+function SkillItem({ item }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <li
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        fontFamily:    'var(--font-mono), monospace',
+        fontSize:      12,
+        fontWeight:    300,
+        letterSpacing: '0.04em',
+        color:         hovered ? '#f0ebe3' : 'rgba(240,235,227,0.55)',
+        transition:    'color 0.15s ease',
+        cursor:        'default',
+      }}
+    >
+      {item}
+    </li>
+  )
+}
+
+function SkillGroup({ label, items }) {
+  return (
+    <div style={{ minWidth: 140 }}>
+      <div style={{
+        fontFamily:    'var(--font-mono), monospace',
+        fontSize:      9,
+        letterSpacing: '0.14em',
+        color:         'rgba(240,235,227,0.2)',
+        marginBottom:  16,
+        fontWeight:    300,
+      }}>
+        {label.toUpperCase()}
+      </div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map(item => <SkillItem key={item} item={item} />)}
+      </ul>
+    </div>
+  )
+}
 
 // ── Mobile: vertical timeline ─────────────────
 
@@ -39,43 +205,42 @@ function VerticalJourney({ visible, hovered, setHovered }) {
                       width: 8, height: 8, borderRadius: '50%',
                       background: '#c4956a',
                       boxShadow: visible[i] ? '0 0 0 4px rgba(196,149,106,0.1)' : 'none',
-                      opacity: visible[i] ? 1 : 0,
+                      opacity:   visible[i] ? 1 : 0,
                       transition: 'opacity 0.5s ease, box-shadow 0.5s ease',
                     }} />
                   ) : (
                     <div style={{
                       width: 1.5, height: 10,
                       background: 'rgba(240,235,227,0.28)',
-                      opacity: visible[i] ? 1 : 0,
+                      opacity:    visible[i] ? 1 : 0,
                       transition: 'opacity 0.4s ease',
                     }} />
                   )}
                 </div>
 
                 <span style={{
-                  fontFamily: 'var(--font-mono), monospace',
-                  fontSize: 11,
+                  fontFamily:    'var(--font-mono), monospace',
+                  fontSize:      11,
                   letterSpacing: '0.1em',
-                  color: isLast ? '#c4956a' : 'rgba(240,235,227,0.25)',
-                  opacity: visible[i] ? 1 : 0,
-                  transition: 'opacity 0.7s ease',
-                  minWidth: 100,
-                  textAlign: 'left',
+                  color:         isLast ? '#c4956a' : 'rgba(240,235,227,0.25)',
+                  opacity:       visible[i] ? 1 : 0,
+                  transition:    'opacity 0.7s ease',
+                  minWidth:      100,
+                  textAlign:     'left',
                 }}>
                   {wp.label.toUpperCase()}
                 </span>
               </div>
 
-              {/* Tooltip inline on mobile */}
               <div style={{
                 paddingLeft: 34,
-                maxHeight: hovered === i ? 30 : 0,
-                overflow: 'hidden',
-                opacity: hovered === i ? 1 : 0,
-                transition: 'max-height 0.2s ease, opacity 0.2s ease',
-                fontFamily: 'var(--font-mono), monospace',
-                fontSize: 10,
-                color: 'rgba(240,235,227,0.45)',
+                maxHeight:   hovered === i ? 30 : 0,
+                overflow:    'hidden',
+                opacity:     hovered === i ? 1 : 0,
+                transition:  'max-height 0.2s ease, opacity 0.2s ease',
+                fontFamily:  'var(--font-mono), monospace',
+                fontSize:    10,
+                color:       'rgba(240,235,227,0.45)',
                 letterSpacing: '0.06em',
               }}>
                 {wp.tooltip}
@@ -85,7 +250,7 @@ function VerticalJourney({ visible, hovered, setHovered }) {
                 <div style={{
                   marginLeft: 7, width: 1.5, height: 20,
                   background: 'rgba(240,235,227,0.1)',
-                  animation: visible[i] ? `growDown 0.3s ease ${DOT_DELAYS[i] + 300}ms both` : 'none',
+                  animation:  visible[i] ? `growDown 0.3s ease ${DOT_DELAYS[i] + 300}ms both` : 'none',
                 }} />
               )}
             </div>
@@ -116,10 +281,8 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
           </filter>
         </defs>
 
-        {/* Ghost path */}
         <path d={PATH_D} fill="none" stroke="rgba(240,235,227,0.05)" strokeWidth={1.5} strokeLinecap="round" />
 
-        {/* Animated draw */}
         <path
           ref={pathRef}
           d={PATH_D}
@@ -132,7 +295,6 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
           style={{ animation: 'drawPath 1.8s cubic-bezier(0.4,0,0.2,1) 1s forwards' }}
         />
 
-        {/* Ink tip — travels the path as it draws */}
         <circle r={3.5} fill="#c4956a" filter="url(#tip-glow)">
           <animateMotion dur="1.8s" begin="1s" fill="freeze" path={PATH_D} />
           <animate attributeName="opacity" values="0;0.9;0.9;0" keyTimes="0;0.04;0.86;1" dur="1.8s" begin="1s" fill="freeze" />
@@ -150,25 +312,22 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
 
               {isLast ? (
                 <>
-                  {/* Static ring */}
                   <circle
                     cx={wp.x} cy={wp.y} r={10}
                     fill="none" stroke="#c4956a" strokeWidth={0.75}
                     style={{ opacity: visible[i] ? 0.2 : 0, transition: 'opacity 1s ease' }}
                   />
-                  {/* Sonar ping — fires once when dot appears */}
                   {visible[i] && (
                     <circle
                       cx={wp.x} cy={wp.y} r={4}
                       fill="none" stroke="#c4956a" strokeWidth={0.75}
                       style={{
-                        animation: 'sonarPing 1.4s ease-out forwards',
+                        animation:    'sonarPing 1.4s ease-out forwards',
                         transformBox: 'fill-box',
                         transformOrigin: 'center',
                       }}
                     />
                   )}
-                  {/* Dot */}
                   <circle
                     cx={wp.x} cy={wp.y} r={3.5}
                     fill="#c4956a"
@@ -191,9 +350,9 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
                 fontFamily="var(--font-mono), monospace"
                 letterSpacing="0.1em"
                 style={{
-                  opacity: visible[i] ? 1 : 0,
+                  opacity:    visible[i] ? 1 : 0,
                   transition: 'opacity 0.7s ease, transform 0.18s ease',
-                  transform: hovered === i ? 'translateY(-2px)' : 'translateY(0)',
+                  transform:  hovered === i ? 'translateY(-2px)' : 'translateY(0)',
                 }}
               >
                 {wp.label.toUpperCase()}
@@ -203,27 +362,26 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
         })}
       </svg>
 
-      {/* Tooltips — no border */}
       {waypoints.map((wp, i) => (
         <div
           key={wp.label}
           style={{
-            position: 'absolute',
-            left: `${(wp.x / 580) * 100}%`,
-            top: `${(wp.y / 200) * 100}%`,
+            position:  'absolute',
+            left:      `${(wp.x / 580) * 100}%`,
+            top:       `${(wp.y / 200) * 100}%`,
             transform: 'translate(-50%, -210%)',
-            background: 'rgba(13,11,9,0.94)',
+            background:   'rgba(13,11,9,0.94)',
             borderRadius: 4,
-            padding: '6px 10px',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: 10,
+            padding:      '6px 10px',
+            fontFamily:   'var(--font-mono), monospace',
+            fontSize:     10,
             letterSpacing: '0.06em',
-            color: 'rgba(240,235,227,0.6)',
-            whiteSpace: 'nowrap',
+            color:         'rgba(240,235,227,0.6)',
+            whiteSpace:    'nowrap',
             pointerEvents: 'none',
-            opacity: hovered === i ? 1 : 0,
-            transition: 'opacity 0.15s ease',
-            zIndex: 10,
+            opacity:       hovered === i ? 1 : 0,
+            transition:    'opacity 0.15s ease',
+            zIndex:        10,
           }}
         >
           {wp.tooltip}
@@ -237,10 +395,10 @@ function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
 
 function JourneyPath() {
   const pathRef = useRef(null)
-  const [pathLen, setPathLen] = useState(720)
-  const [visible, setVisible] = useState(waypoints.map(() => false))
-  const [hovered, setHovered] = useState(null)
-  const [isMobile, setIsMobile] = useState(false)
+  const [pathLen, setPathLen]     = useState(720)
+  const [visible, setVisible]     = useState(waypoints.map(() => false))
+  const [hovered, setHovered]     = useState(null)
+  const [isMobile, setIsMobile]   = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 560)
@@ -302,34 +460,72 @@ const CodedexIcon = () => (
   </svg>
 )
 
+// ── Scroll indicator ──────────────────────────
+
+function ScrollIndicator({ visible }) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position:      'fixed',
+        bottom:        32,
+        left:          '50%',
+        transform:     'translateX(-50%)',
+        opacity:       visible ? 1 : 0,
+        transition:    'opacity 0.6s ease',
+        pointerEvents: 'none',
+        zIndex:        2,
+        display:       'flex',
+        flexDirection: 'column',
+        alignItems:    'center',
+        gap:           4,
+      }}
+    >
+      <div style={{
+        width:      1,
+        height:     28,
+        background: 'linear-gradient(to bottom, transparent, rgba(196,149,106,0.5))',
+        animation:  'scrollPulse 2.2s ease-in-out infinite',
+      }} />
+      <div style={{
+        width:        4,
+        height:       4,
+        borderRadius: '50%',
+        background:   'rgba(196,149,106,0.5)',
+      }} />
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────
 
 export default function Home() {
-  const h1Ref = useRef(null)
+  const h1Ref    = useRef(null)
   const iconRefs = useRef([])
 
-  // Consolidated mouse tracking: name parallax + magnetic icons
+  const [activeSection,       setActiveSection]       = useState('hero')
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false)
+
+  // Name parallax + magnetic icon attraction
   useEffect(() => {
     const handleMouse = (e) => {
-      const cx = window.innerWidth / 2
+      const cx = window.innerWidth  / 2
       const cy = window.innerHeight / 2
-      const nx = (e.clientX - cx) / cx  // -1 to 1
+      const nx = (e.clientX - cx) / cx
       const ny = (e.clientY - cy) / cy
 
-      // Name depth parallax ±5px
       if (h1Ref.current) {
         h1Ref.current.style.transform = `translate(${nx * 5}px, ${ny * 5}px)`
       }
 
-      // Magnetic icon attraction
       iconRefs.current.forEach(el => {
         if (!el) return
-        const rect = el.getBoundingClientRect()
-        const icx = rect.left + rect.width / 2
-        const icy = rect.top + rect.height / 2
-        const dx = e.clientX - icx
-        const dy = e.clientY - icy
-        const dist = Math.sqrt(dx * dx + dy * dy)
+        const rect  = el.getBoundingClientRect()
+        const icx   = rect.left + rect.width  / 2
+        const icy   = rect.top  + rect.height / 2
+        const dx    = e.clientX - icx
+        const dy    = e.clientY - icy
+        const dist  = Math.sqrt(dx * dx + dy * dy)
         const threshold = 80
         if (dist < threshold) {
           const pull = (1 - dist / threshold) * 6
@@ -344,30 +540,67 @@ export default function Home() {
     return () => window.removeEventListener('mousemove', handleMouse)
   }, [])
 
+  // Show scroll indicator after hero animation chain finishes
+  useEffect(() => {
+    const t = setTimeout(() => setShowScrollIndicator(true), 5200)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Hide scroll indicator on first scroll
+  useEffect(() => {
+    const onScroll = () => { if (window.scrollY > 50) setShowScrollIndicator(false) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Active section tracking for nav highlight
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id)
+        })
+      },
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 },
+    )
+    SECTION_IDS.forEach(id => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [])
+
   const socialLinks = [
     { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'   },
     { icon: <LinkedInIcon />, href: links.linkedin, label: 'LinkedIn' },
     { icon: <CodedexIcon />,  href: links.codedex,  label: 'Codedex'  },
   ]
 
+  const sectionPadding = 'clamp(80px, 14vh, 140px) clamp(24px, 6vw, 64px)'
+  const contentWidth   = { maxWidth: 680, margin: '0 auto' }
+
   return (
     <>
       <Head>
         <title>{meta.title}</title>
         <meta name="description" content={meta.description} />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport"    content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.svg" />
 
-        <meta property="og:title" content={meta.title} />
+        <meta property="og:title"       content={meta.title} />
         <meta property="og:description" content={meta.description} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={meta.url} />
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content={meta.title} />
+        <meta property="og:type"        content="website" />
+        <meta property="og:url"         content={meta.url} />
+        <meta name="twitter:card"        content="summary" />
+        <meta name="twitter:title"       content={meta.title} />
         <meta name="twitter:description" content={meta.description} />
 
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+          html {
+            scroll-behavior: smooth;
+          }
 
           html, body {
             width: 100%;
@@ -390,38 +623,33 @@ export default function Home() {
             to { stroke-dashoffset: 0; }
           }
 
-          /* Name finds its position */
           @keyframes settle {
             from { letter-spacing: 0.04em; opacity: 0; transform: translateY(8px); }
             to   { letter-spacing: -0.02em; opacity: 1; transform: translateY(0);  }
           }
 
-          /* Accent line draws from center */
           @keyframes lineGrow {
             from { transform: scaleX(0); }
             to   { transform: scaleX(1); }
           }
 
-          /* Engineering waypoint — single radar pulse */
           @keyframes sonarPing {
-            0%   { transform: scale(1);  opacity: 0.6; }
-            100% { transform: scale(9);  opacity: 0;   }
+            0%   { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(9); opacity: 0;   }
           }
 
           @keyframes growDown {
-            from { height: 0; opacity: 0; }
+            from { height: 0;    opacity: 0; }
             to   { height: 20px; opacity: 1; }
           }
 
-          /* Terminal cursor blink */
           @keyframes blink {
-            0%, 49% { opacity: 0.7; }
-            50%, 100% { opacity: 0; }
+            0%,  49% { opacity: 0.7; }
+            50%, 100% { opacity: 0;  }
           }
 
-          /* Ambient particle drift */
           @keyframes drift0 {
-            0%   { transform: translate(0, 0)      opacity: 0; }
+            0%   { transform: translate(0, 0);        opacity: 0; }
             10%  { opacity: 1; }
             45%  { transform: translate(12px, -28px); }
             55%  { transform: translate(18px, -22px); }
@@ -429,7 +657,7 @@ export default function Home() {
             100% { transform: translate(8px, -40px);  opacity: 0; }
           }
           @keyframes drift1 {
-            0%   { transform: translate(0, 0);     opacity: 0; }
+            0%   { transform: translate(0, 0);         opacity: 0; }
             10%  { opacity: 0.8; }
             40%  { transform: translate(-14px, -20px); }
             60%  { transform: translate(-8px,  -32px); }
@@ -437,131 +665,141 @@ export default function Home() {
             100% { transform: translate(-18px, -44px); opacity: 0; }
           }
           @keyframes drift2 {
-            0%   { transform: translate(0, 0);      opacity: 0; }
+            0%   { transform: translate(0, 0);        opacity: 0; }
             12%  { opacity: 0.6; }
             50%  { transform: translate(10px, -18px); }
             88%  { opacity: 0.4; }
-            100% { transform: translate(6px,  -36px);  opacity: 0; }
+            100% { transform: translate(6px,  -36px); opacity: 0; }
+          }
+
+          @keyframes scrollPulse {
+            0%, 100% { transform: translateY(0);   opacity: 0.4; }
+            50%       { transform: translateY(6px); opacity: 0.8; }
+          }
+
+          @keyframes glowPulse {
+            0%, 100% { opacity: 0.6; }
+            50%       { opacity: 1;   }
           }
 
           a { text-decoration: none; color: inherit; }
 
           :focus-visible {
-            outline: 1.5px solid #c4956a;
+            outline:        1.5px solid #c4956a;
             outline-offset: 4px;
-            border-radius: 3px;
+            border-radius:  3px;
           }
+
+          section { position: relative; }
         `}</style>
       </Head>
 
-      {/* Ambient particles — drifting copper motes in negative space */}
+      <Nav activeSection={activeSection} />
+      <ScrollIndicator visible={showScrollIndicator} />
+
+      {/* Ambient copper particles */}
       {PARTICLES.map((p, i) => (
         <div
           key={i}
           aria-hidden="true"
           style={{
-            position: 'fixed',
-            left: p.x,
-            top: p.y,
-            width: 2,
-            height: 2,
+            position:     'fixed',
+            left:         p.x,
+            top:          p.y,
+            width:        2,
+            height:       2,
             borderRadius: '50%',
-            background: '#c4956a',
-            boxShadow: '0 0 4px 1px rgba(196,149,106,0.4)',
-            animation: `drift${i} ${p.dur}s ease-in-out ${p.delay}s infinite`,
+            background:   '#c4956a',
+            boxShadow:    '0 0 4px 1px rgba(196,149,106,0.4)',
+            animation:    `drift${i} ${p.dur}s ease-in-out ${p.delay}s infinite`,
             pointerEvents: 'none',
-            zIndex: 1,
+            zIndex:        1,
           }}
         />
       ))}
 
-      <main style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        padding: 'clamp(120px, 22vh, 200px) clamp(24px, 6vw, 64px) clamp(48px, 8vh, 96px)',
-        fontFamily: "var(--font-inter), sans-serif",
-        color: '#f0ebe3',
-        position: 'relative',
-      }}>
-
-        {/* Content */}
+      {/* ── HERO ── */}
+      <section
+        id="hero"
+        style={{
+          minHeight:      '100vh',
+          display:        'flex',
+          alignItems:     'flex-start',
+          justifyContent: 'center',
+          padding:        'clamp(120px, 22vh, 200px) clamp(24px, 6vw, 64px) clamp(48px, 8vh, 96px)',
+          fontFamily:     'var(--font-inter), sans-serif',
+          color:          '#f0ebe3',
+          position:       'relative',
+          zIndex:         1,
+        }}
+      >
         <div style={{ maxWidth: 560, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
 
-          {/* Name — Cormorant display serif, settles into position, depth parallax */}
           <h1
             ref={h1Ref}
             style={{
-              fontFamily: "var(--font-display), serif",
-              fontSize: 'clamp(72px, 13vw, 116px)',
-              fontWeight: 700,
-              lineHeight: 0.95,
+              fontFamily:    'var(--font-display), serif',
+              fontSize:      'clamp(72px, 13vw, 116px)',
+              fontWeight:    700,
+              lineHeight:    0.95,
               letterSpacing: '-0.02em',
-              color: '#f0ebe3',
-              animation: 'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
-              willChange: 'transform',
-              transition: 'transform 0.1s ease-out',
+              color:         '#f0ebe3',
+              animation:     'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
+              willChange:    'transform',
+              transition:    'transform 0.1s ease-out',
             }}
           >
             {meta.title}
           </h1>
 
-          {/* Tagline */}
           <p style={{
-            marginTop: 18,
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 'clamp(11px, 1.5vw, 13px)',
-            fontWeight: 300,
-            color: 'rgba(240,235,227,0.36)',
+            marginTop:     18,
+            fontFamily:    'var(--font-mono), monospace',
+            fontSize:      'clamp(11px, 1.5vw, 13px)',
+            fontWeight:    300,
+            color:         'rgba(240,235,227,0.36)',
             letterSpacing: '0.07em',
-            animation: 'fadeUp 0.7s ease 0.5s both',
+            animation:     'fadeUp 0.7s ease 0.5s both',
           }}>
             {tagline}
           </p>
 
-          {/* Journey path */}
           <div style={{ marginTop: 56, animation: 'fadeUp 0.6s ease 0.9s both' }}>
             <JourneyPath />
           </div>
 
-          {/* Status board */}
           <div style={{
-            marginTop: 32,
-            display: 'inline-flex',
+            marginTop:     32,
+            display:       'inline-flex',
             flexDirection: 'column',
-            gap: 6,
-            animation: 'fadeUp 0.7s ease 4.0s both',
+            gap:           6,
+            animation:     'fadeUp 0.7s ease 4.0s both',
           }}>
             {status.map(({ label, value }, idx) => (
               <div key={label} style={{
-                display: 'flex',
-                gap: 16,
+                display:    'flex',
+                gap:        16,
                 alignItems: 'baseline',
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 'clamp(10px, 1.3vw, 12px)',
+                fontFamily: 'var(--font-mono), monospace',
+                fontSize:   'clamp(10px, 1.3vw, 12px)',
                 fontWeight: 300,
               }}>
                 <span style={{
-                  color: 'rgba(240,235,227,0.2)',
+                  color:         'rgba(240,235,227,0.2)',
                   letterSpacing: '0.08em',
-                  minWidth: 64,
-                  textAlign: 'right',
+                  minWidth:      64,
+                  textAlign:     'right',
                 }}>
                   {label}
                 </span>
                 <span style={{ color: 'rgba(196,149,106,0.35)', fontSize: 10 }}>—</span>
-                <span style={{
-                  color: 'rgba(240,235,227,0.5)',
-                  letterSpacing: '0.04em',
-                }}>
+                <span style={{ color: 'rgba(240,235,227,0.5)', letterSpacing: '0.04em' }}>
                   {value}
-                  {/* Terminal blink cursor after last status row */}
                   {idx === status.length - 1 && (
                     <span style={{
                       marginLeft: 3,
-                      color: 'rgba(196,149,106,0.7)',
-                      animation: 'blink 1.1s step-end infinite',
+                      color:      'rgba(196,149,106,0.7)',
+                      animation:  'blink 1.1s step-end infinite',
                       fontWeight: 300,
                     }}>▌</span>
                   )}
@@ -570,14 +808,13 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Social icons — magnetic */}
           <div style={{
-            marginTop: 52,
-            display: 'flex',
-            gap: 32,
+            marginTop:      52,
+            display:        'flex',
+            gap:            32,
             justifyContent: 'center',
-            alignItems: 'center',
-            animation: 'fadeUp 0.7s ease 4.4s both',
+            alignItems:     'center',
+            animation:      'fadeUp 0.7s ease 4.4s both',
           }}>
             {socialLinks.map(({ icon, href, label }, i) => (
               <a
@@ -588,15 +825,15 @@ export default function Home() {
                 rel="noreferrer"
                 ref={el => { iconRefs.current[i] = el }}
                 style={{
-                  color: 'rgba(240,235,227,0.4)',
+                  color:      'rgba(240,235,227,0.4)',
                   transition: 'color 0.2s ease, transform 0.15s ease-out',
-                  display: 'flex',
+                  display:    'flex',
                   alignItems: 'center',
                   willChange: 'transform',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(240,235,227,0.4)'
+                  e.currentTarget.style.color     = 'rgba(240,235,227,0.4)'
                   e.currentTarget.style.transform = 'translate(0, 0)'
                 }}
               >
@@ -605,21 +842,20 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Primary CTA — copper text, no border */}
           <div style={{ marginTop: 24, animation: 'fadeUp 0.7s ease 4.7s both' }}>
             <a
               href={links.email}
               aria-label="Send email"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 12,
-                fontWeight: 300,
+                display:       'inline-flex',
+                alignItems:    'center',
+                gap:           8,
+                fontFamily:    'var(--font-mono), monospace',
+                fontSize:      12,
+                fontWeight:    300,
                 letterSpacing: '0.08em',
-                color: 'rgba(196,149,106,0.6)',
-                transition: 'color 0.2s ease',
+                color:         'rgba(196,149,106,0.6)',
+                transition:    'color 0.2s ease',
               }}
               onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
               onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,149,106,0.6)' }}
@@ -630,7 +866,172 @@ export default function Home() {
           </div>
 
         </div>
-      </main>
+      </section>
+
+      {/* ── ABOUT ── */}
+      <section
+        id="about"
+        style={{
+          scrollMarginTop: 64,
+          padding:         sectionPadding,
+          zIndex:          1,
+        }}
+      >
+        <div style={contentWidth}>
+          <ScrollReveal>
+            <SectionHeader number="01" title="About" />
+          </ScrollReveal>
+          <ScrollReveal delay="120ms">
+            <p style={{
+              fontFamily:   'var(--font-inter), sans-serif',
+              fontSize:     'clamp(14px, 1.8vw, 16px)',
+              fontWeight:   400,
+              lineHeight:   1.8,
+              color:        'rgba(240,235,227,0.55)',
+              marginBottom: 20,
+            }}>
+              {about.intro}
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-inter), sans-serif',
+              fontSize:   'clamp(14px, 1.8vw, 16px)',
+              fontWeight: 400,
+              lineHeight: 1.8,
+              color:      'rgba(240,235,227,0.35)',
+            }}>
+              {about.detail}
+            </p>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ── PROJECTS ── */}
+      <section
+        id="projects"
+        style={{
+          scrollMarginTop: 64,
+          padding:         sectionPadding,
+          zIndex:          1,
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <ScrollReveal>
+            <SectionHeader number="02" title="Projects" />
+          </ScrollReveal>
+          <div style={{
+            display:             'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap:                 40,
+          }}>
+            {projects.map((p, i) => (
+              <ScrollReveal key={p.name} delay={`${i * 130}ms`}>
+                <ProjectCard project={p} />
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SKILLS ── */}
+      <section
+        id="skills"
+        style={{
+          scrollMarginTop: 64,
+          padding:         sectionPadding,
+          zIndex:          1,
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <ScrollReveal>
+            <SectionHeader number="03" title="Skills" />
+          </ScrollReveal>
+          <div style={{
+            display:  'flex',
+            gap:      'clamp(32px, 6vw, 72px)',
+            flexWrap: 'wrap',
+          }}>
+            <ScrollReveal delay="0ms">
+              <SkillGroup label="Building Now"  items={skills.building}   />
+            </ScrollReveal>
+            <ScrollReveal delay="110ms">
+              <SkillGroup label="Familiar With" items={skills.familiar}   />
+            </ScrollReveal>
+            <ScrollReveal delay="220ms">
+              <SkillGroup label="Background"    items={skills.background} />
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{
+        borderTop: '1px solid rgba(240,235,227,0.06)',
+        padding:   'clamp(40px, 6vh, 64px) clamp(24px, 6vw, 64px)',
+        zIndex:    1,
+        position:  'relative',
+      }}>
+        <div style={{
+          maxWidth:       760,
+          margin:         '0 auto',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          flexWrap:       'wrap',
+          gap:            24,
+        }}>
+          <a
+            href={links.email}
+            aria-label="Send email"
+            style={{
+              display:       'inline-flex',
+              alignItems:    'center',
+              gap:           8,
+              fontFamily:    'var(--font-mono), monospace',
+              fontSize:      12,
+              fontWeight:    300,
+              letterSpacing: '0.08em',
+              color:         'rgba(196,149,106,0.6)',
+              transition:    'color 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,149,106,0.6)' }}
+          >
+            <EmailIcon />
+            say hello
+          </a>
+
+          <div style={{ display: 'flex', gap: 24 }}>
+            {socialLinks.map(({ icon, href, label }) => (
+              <a
+                key={label}
+                href={href}
+                aria-label={label}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color:      'rgba(240,235,227,0.3)',
+                  transition: 'color 0.2s ease',
+                  display:    'flex',
+                  alignItems: 'center',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(240,235,227,0.3)' }}
+              >
+                {icon}
+              </a>
+            ))}
+          </div>
+
+          <span style={{
+            fontFamily:    'var(--font-mono), monospace',
+            fontSize:      10,
+            letterSpacing: '0.06em',
+            color:         'rgba(240,235,227,0.16)',
+          }}>
+            © mark jp · markjp.dev
+          </span>
+        </div>
+      </footer>
     </>
   )
 }
