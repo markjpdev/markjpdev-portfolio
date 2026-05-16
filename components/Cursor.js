@@ -59,8 +59,8 @@ export default function Cursor() {
         width: active ? 28 : 8,
         height: active ? 28 : 8,
         borderRadius: '50%',
-        background: active ? 'transparent' : '#c4956a',
-        border: active ? '1px solid rgba(196,149,106,0.55)' : 'none',
+        background: active ? 'transparent' : '#1a1814',
+        border: active ? '1.5px solid #c4956a' : 'none',
         // Offset to center on cursor tip
         marginLeft: active ? -14 : -4,
         marginTop: active ? -14 : -4,
