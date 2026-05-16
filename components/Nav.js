@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
+import { links } from '../lib/content'
 
 const NAV_LINKS = [
-  { label: 'about',    href: '#about'    },
-  { label: 'projects', href: '#projects' },
-  { label: 'skills',   href: '#skills'   },
+  { label: 'About',    href: '#about'    },
+  { label: 'Projects', href: '#projects' },
+  { label: 'Skills',   href: '#skills'   },
 ]
 
 export default function Nav({ activeSection }) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
+    const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -21,37 +22,42 @@ export default function Nav({ activeSection }) {
       style={{
         position:   'fixed',
         top: 0, left: 0, right: 0,
-        height:     52,
+        height:     56,
         display:    'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding:    '0 clamp(24px, 6vw, 64px)',
-        background: scrolled ? 'rgba(13,11,9,0.88)' : 'transparent',
+        padding:    '0 clamp(24px, 6vw, 72px)',
+        background: scrolled
+          ? 'rgba(250,249,247,0.94)'
+          : 'rgba(250,249,247,0.0)',
         backdropFilter:       scrolled ? 'blur(12px)' : 'none',
         WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
-        transition: 'background 0.35s ease',
-        zIndex:     9996,
+        borderBottom: scrolled ? '1px solid rgba(26,24,20,0.07)' : '1px solid transparent',
+        transition:   'background 0.3s ease, border-color 0.3s ease',
+        zIndex:       9996,
       }}
     >
+      {/* Logo */}
       <a
         href="#hero"
         aria-label="Back to top"
         style={{
           fontFamily:     'var(--font-display), serif',
-          fontSize:       18,
+          fontSize:       20,
           fontWeight:     700,
-          color:          '#c4956a',
-          letterSpacing:  '-0.01em',
+          letterSpacing:  '-0.02em',
+          color:          '#1a1814',
           textDecoration: 'none',
-          transition:     'opacity 0.2s ease',
+          transition:     'color 0.2s ease',
         }}
-        onMouseEnter={e => { e.currentTarget.style.opacity = '0.65' }}
-        onMouseLeave={e => { e.currentTarget.style.opacity = '1'    }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#1a1814' }}
       >
-        MJP
+        Mark JP
       </a>
 
-      <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 32px)', alignItems: 'center' }}>
+      {/* Links + CTA */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px, 3.5vw, 36px)' }}>
         {NAV_LINKS.map(({ label, href }) => {
           const active = activeSection === href.slice(1)
           return (
@@ -59,21 +65,45 @@ export default function Nav({ activeSection }) {
               key={label}
               href={href}
               style={{
-                fontFamily:     'var(--font-mono), monospace',
-                fontSize:       11,
-                fontWeight:     300,
-                letterSpacing:  '0.1em',
-                color:          active ? '#c4956a' : 'rgba(240,235,227,0.35)',
+                fontFamily:     'var(--font-inter), sans-serif',
+                fontSize:       14,
+                fontWeight:     400,
+                color:          active ? '#c4956a' : 'rgba(26,24,20,0.55)',
                 textDecoration: 'none',
                 transition:     'color 0.2s ease',
               }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'rgba(240,235,227,0.8)' }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = active ? '#c4956a' : 'rgba(240,235,227,0.35)' }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#1a1814' }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'rgba(26,24,20,0.55)' }}
             >
               {label}
             </a>
           )
         })}
+
+        <a
+          href={links.email}
+          style={{
+            fontFamily:    'var(--font-inter), sans-serif',
+            fontSize:      13,
+            fontWeight:    500,
+            color:         '#1a1814',
+            border:        '1px solid rgba(26,24,20,0.25)',
+            borderRadius:  4,
+            padding:       '6px 14px',
+            textDecoration: 'none',
+            transition:    'border-color 0.2s ease, color 0.2s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = '#c4956a'
+            e.currentTarget.style.color       = '#c4956a'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'rgba(26,24,20,0.25)'
+            e.currentTarget.style.color       = '#1a1814'
+          }}
+        >
+          Say hello
+        </a>
       </div>
     </nav>
   )

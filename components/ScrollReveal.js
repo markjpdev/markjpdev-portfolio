@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function ScrollReveal({
-  children,
-  variant   = 'fadeUp',
-  delay     = '0ms',
-  threshold = 0.12,
-  style     = {},
-}) {
-  const ref      = useRef(null)
+// Fade-only reveal — no movement, just opacity.
+// Movement-based transitions felt jarring; a clean fade is enough.
+export default function ScrollReveal({ children, delay = '0ms', threshold = 0.1, style = {} }) {
+  const ref            = useRef(null)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -26,17 +22,12 @@ export default function ScrollReveal({
     return () => observer.disconnect()
   }, [threshold])
 
-  const hiddenTransform =
-    variant === 'slideLeft' ? 'translateX(-16px)' :
-    variant === 'fadeUp'    ? 'translateY(24px)'  : 'none'
-
   return (
     <div
       ref={ref}
       style={{
-        transition: `opacity 0.75s ease ${delay}, transform 0.75s ease ${delay}`,
-        opacity:   visible ? 1 : 0,
-        transform: visible ? 'translate(0)' : hiddenTransform,
+        transition: `opacity 0.6s ease ${delay}`,
+        opacity:    visible ? 1 : 0,
         ...style,
       }}
     >

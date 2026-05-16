@@ -1,50 +1,22 @@
-// Shared layout — grain, vignette, top accent line
-// Applied to every page via _app.js
-
-const NOISE_URI = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+// Shared layout — top accent line only.
+// Grain and vignette removed; light theme handles readability directly.
 
 export default function Layout({ children }) {
   return (
     <>
-      {/* Film grain */}
+      {/* Copper accent line — grows from center on page load */}
       <div
         aria-hidden="true"
         style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundImage: NOISE_URI,
-          opacity: 0.038,
-          pointerEvents: 'none',
-          zIndex: 9999,
-        }}
-      />
-
-      {/* Vignette */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)',
-          pointerEvents: 'none',
-          zIndex: 9998,
-        }}
-      />
-
-      {/* Top accent line — grows from center outward */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
+          position:        'fixed',
           top: 0, left: 0, right: 0,
-          height: 2,
-          background: '#c4956a',
+          height:          2,
+          background:      '#c4956a',
           transformOrigin: 'center',
-          animation: 'lineGrow 0.6s cubic-bezier(0.4,0,0.2,1) 0s both',
-          zIndex: 9997,
+          animation:       'lineGrow 0.6s cubic-bezier(0.4,0,0.2,1) 0s both',
+          zIndex:          9997,
         }}
       />
-
       {children}
     </>
   )
