@@ -99,7 +99,7 @@ export default function Home() {
 
       <div className="stage">
         <header className="top">
-          <div className="signature"><span className="dash">—</span>mark joseph</div>
+          <div className="signature"><span className="dash">—</span>mark jayson punsalan</div>
           <div className="meta">
             <div className="time" id="time">— : —</div>
             <div className="now"><span className="dot" />currently exploring physical ai</div>
@@ -108,7 +108,9 @@ export default function Home() {
 
         <main className="center">
           <div className="identity">
-            <h1>Mark <em>Joseph</em></h1>
+            <h1>Mark Jayson</h1>
+            <p className="surname">Punsalan</p>
+            <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
             <p className="tagline">quietly building things that work.</p>
           </div>
 
@@ -175,8 +177,8 @@ export default function Home() {
             <div className={`panel${active === 'about' ? ' is-visible' : ''}`}>
               <div className="about-wrap">
                 <p>Ten years deep in enterprise software. Application support, business analysis, the quiet middle layer where things either hold together or fall apart.</p>
-                <p>These days I split my attention between healthcare SaaS work and <em>AI integration</em>, building automations that take the small repeated pain out of how teams operate. It pays the bills and teaches me a lot.</p>
-                <p>Looking further out, I&apos;m building toward <em>physical AI, robotics, and simulation</em>. That&apos;s a multi year direction. For now I&apos;m focused on the bridge between here and there.</p>
+                <p>These days I split my attention between healthcare SaaS work and <span className="highlight">AI integration</span>, building automations that take the small repeated pain out of how teams operate. It pays the bills and teaches me a lot.</p>
+                <p>Looking further out, I&apos;m building toward <span className="highlight">physical AI, robotics, and simulation</span>. That&apos;s a multi year direction. For now I&apos;m focused on the bridge between here and there.</p>
               </div>
             </div>
 
