@@ -1,6 +1,7 @@
 import Script from 'next/script'
 import { useEffect } from 'react'
 import ErrorBoundary from '../components/ErrorBoundary'
+import Layout from '../components/Layout'
 import '../styles/globals.css'
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID
@@ -35,7 +36,9 @@ export default function App({ Component, pageProps }) {
         </>
       )}
       <ErrorBoundary>
-        <Component {...pageProps} />
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
       </ErrorBoundary>
     </>
   )
