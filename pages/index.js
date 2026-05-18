@@ -2,8 +2,8 @@ import Head from 'next/head'
 import { useState, useEffect, useRef } from 'react'
 import { meta } from '../lib/content'
 
-const SECTIONS = ['projects', 'writing', 'about', 'contact']
-const KEY_MAP = { '1': 'projects', '2': 'writing', '3': 'about', '4': 'contact' }
+const SECTIONS = ['projects', 'writing', 'about', 'contact', 'tools']
+const KEY_MAP = { '1': 'projects', '2': 'writing', '3': 'about', '4': 'contact', '5': 'tools' }
 
 export default function Home() {
   const [active, setActive] = useState(null)
@@ -107,27 +107,7 @@ export default function Home() {
         </header>
 
         <main className="center">
-          <div className="identity">
-            <h1>Mark Jayson</h1>
-            <p className="surname">Punsalan</p>
-            <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
-            <p className="tagline">quietly building things that work.</p>
-          </div>
-
-          <nav className="pills" role="tablist">
-            {SECTIONS.map((s, i) => (
-              <button
-                key={s}
-                className={`pill${active === s ? ' is-active' : ''}`}
-                onClick={() => toggle(s)}
-                aria-pressed={active === s}
-              >
-                <span className="num">0{i + 1}</span>
-                {s === 'contact' ? 'say hi' : s}
-              </button>
-            ))}
-          </nav>
-
+          <div className="panel-side">
           <div className="panel-wrap">
             <div className={`panel${active === 'projects' ? ' is-visible' : ''}`}>
               <div className="projects-grid">
@@ -135,16 +115,25 @@ export default function Home() {
                   <span className="num">01</span>
                   <h3>Veeva Vault CTMS</h3>
                   <p>Clinical trial management configuration and GxP aligned workflows for life sciences operations.</p>
+                  <div className="tags">
+                    {['Veeva', 'GxP', 'CTMS', 'Life Sciences'].map(t => <span key={t} className="tag">{t}</span>)}
+                  </div>
                 </article>
                 <article className="project">
                   <span className="num">02</span>
                   <h3>AI Automation Studio</h3>
                   <p>End to end workflows built with n8n, Make, and Claude APIs. Practical tooling for small teams.</p>
+                  <div className="tags">
+                    {['n8n', 'Make', 'Claude API', 'Automation'].map(t => <span key={t} className="tag">{t}</span>)}
+                  </div>
                 </article>
                 <article className="project">
                   <span className="num">03</span>
                   <h3>Healthcare SaaS Ops</h3>
                   <p>Application support and business analysis across enterprise platforms. Production environments and configuration.</p>
+                  <div className="tags">
+                    {['SaaS', 'Healthcare', 'BA', 'Support'].map(t => <span key={t} className="tag">{t}</span>)}
+                  </div>
                 </article>
               </div>
             </div>
@@ -185,10 +174,56 @@ export default function Home() {
             <div className={`panel${active === 'contact' ? ' is-visible' : ''}`}>
               <div className="contact-wrap">
                 <p>open to interesting contracts,<br />collaborations, and conversations.</p>
-                <a className="contact-email" href="mailto:hello@markjp.dev">hello@markjp.dev</a>
+                <a className="contact-cta" href="mailto:hello@markjp.dev">hello@markjp.dev</a>
+              </div>
+            </div>
+
+            <div className={`panel${active === 'tools' ? ' is-visible' : ''}`}>
+              <div className="tools-wrap">
+                {[
+                  { label: 'AI & Automation', chips: ['Claude API', 'n8n', 'Make', 'Cursor'] },
+                  { label: 'Enterprise', chips: ['Veeva Vault', 'CTMS', 'GxP', 'SaaS Ops'] },
+                  { label: 'Build', chips: ['Next.js', 'React', 'Python', 'REST APIs'] },
+                ].map(({ label, chips }) => (
+                  <div key={label} className="tools-group">
+                    <span className="tools-label">{label}</span>
+                    <div className="tools-chips">
+                      {chips.map(c => <span key={c} className="chip">{c}</span>)}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+          </div>
+
+          <aside className="id-side">
+            <div className="identity">
+              <h1>Mark Jayson</h1>
+              <p className="surname">Punsalan</p>
+              <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
+              <p className="tagline">quietly building things that work.</p>
+              <svg className="steam-icon" viewBox="0 0 28 24" aria-hidden="true">
+                <path d="M6,22 C6,16 10,14 6,8 C2,2 6,0 6,0"/>
+                <path d="M14,22 C14,16 10,14 14,8 C18,2 14,0 14,0"/>
+                <path d="M22,22 C22,16 18,14 22,8 C26,2 22,0 22,0"/>
+              </svg>
+            </div>
+
+            <nav className="pills" role="tablist">
+              {SECTIONS.map((s, i) => (
+                <button
+                  key={s}
+                  className={`pill${active === s ? ' is-active' : ''}`}
+                  onClick={() => toggle(s)}
+                  aria-pressed={active === s}
+                >
+                  <span className="num">0{i + 1}</span>
+                  {s === 'contact' ? 'say hi' : s}
+                </button>
+              ))}
+            </nav>
+          </aside>
         </main>
 
         <footer className="bottom">
@@ -215,7 +250,7 @@ export default function Home() {
               </svg>
             </a>
           </div>
-          <div className="keys">press <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> or <kbd>esc</kbd></div>
+          <div className="keys">press <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> or <kbd>esc</kbd></div>
         </footer>
       </div>
     </>
