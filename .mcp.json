@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ux-components": {
+      "type": "url",
+      "url": "https://www.ux-components.com/api/mcp"
+    }
+  }
+}
