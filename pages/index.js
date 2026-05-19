@@ -73,18 +73,25 @@ export default function Home() {
   function open(id) {
     if (visible && active === id) return
     if (visible) {
-      // swap articles
+      // swap: fade current out, then bring new one in
       setLeaving(true)
-      setTimeout(() => { setActive(id); setLeaving(false) }, 300)
+      setTimeout(() => { setActive(id); setLeaving(false) }, 380)
     } else {
-      setActive(id)
-      requestAnimationFrame(() => setVisible(true))
+      // header exits first, article enters after header is gone
+      setVisible(true)
+      setTimeout(() => setActive(id), 340)
     }
   }
 
   function close() {
-    setVisible(false)
-    setTimeout(() => setActive(null), 400)
+    // article exits first
+    setLeaving(true)
+    // header re-enters only after article is fully gone
+    setTimeout(() => {
+      setVisible(false)
+      setActive(null)
+      setLeaving(false)
+    }, 460)
   }
 
   useEffect(() => {
