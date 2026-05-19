@@ -259,11 +259,12 @@ button { font-family: var(--sans); cursor: pointer; }
   position: absolute;
   top: 50%;
   left: 50%;
-  /* fixed width so 1fr grid columns resolve correctly */
-  width: min(58rem, calc(100vw - 3rem));
+  /* 90vw gives 5% breathing room on each side at any viewport */
+  width: min(58rem, 90vw);
   max-height: 90vh;
   max-height: 90dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   background: rgba(14, 11, 9, 0.93);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
@@ -285,8 +286,8 @@ button { font-family: var(--sans); cursor: pointer; }
 }
 
 /* narrower panels — override per article */
-#writing, #about   { width: min(44rem, calc(100vw - 3rem)); }
-#contact           { width: min(32rem, calc(100vw - 3rem)); }
+#writing, #about   { width: min(44rem, 90vw); }
+#contact           { width: min(32rem, 90vw); }
 
 #main article.active {
   opacity: 1;
@@ -409,6 +410,10 @@ button { font-family: var(--sans); cursor: pointer; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.1rem;
+}
+
+@media (max-width: 900px) {
+  .projects-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 .project-card {
@@ -615,12 +620,12 @@ button { font-family: var(--sans); cursor: pointer; }
 }
 
 .chip {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--cream-dim);
   background: var(--cream-faint);
   border: 1px solid var(--border);
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
+  padding: 0.22rem 0.6rem;
+  border-radius: 6px;
   transition: all 250ms var(--ease-out);
 }
 
@@ -826,7 +831,7 @@ button { font-family: var(--sans); cursor: pointer; }
 
   #header h1 { font-size: 1.6rem; }
 
-  #main article { padding: 2.25rem 1.75rem 2.75rem; }
+  #main article { padding: 2rem 1.5rem 2.5rem; }
 
   .projects-grid { grid-template-columns: 1fr; gap: 0.85rem; }
   .tools-wrap    { grid-template-columns: 1fr; gap: 1.2rem; }
