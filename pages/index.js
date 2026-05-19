@@ -1,636 +1,283 @@
 import Head from 'next/head'
-import { useEffect, useRef, useState } from 'react'
-import { meta, tagline, waypoints, status, links } from '../lib/content'
+import { useState, useEffect, useRef } from 'react'
+import { Mail, ArrowRight, MapPin, Briefcase, Zap } from 'lucide-react'
+import { meta } from '../lib/content'
 
-// ─────────────────────────────────────────────
-//  Mark JP — Personal Site
-// ─────────────────────────────────────────────
+const SECTIONS = ['projects', 'writing', 'about', 'contact', 'tools']
+const KEY_MAP = { '1': 'projects', '2': 'writing', '3': 'about', '4': 'contact', '5': 'tools' }
 
-const PATH_D = `M 40,140 C 95,144 140,114 190,112 C 245,110 310,86 370,84 C 430,82 480,58 540,56`
-const DOT_DELAYS = [1500, 2200, 2900, 3600]
-
-// Ambient particle data — fixed positions in negative space
-const PARTICLES = [
-  { x: '8vw',   y: '30vh', delay: 0,    dur: 18 },
-  { x: '88vw',  y: '55vh', delay: 6,    dur: 22 },
-  { x: '14vw',  y: '72vh', delay: 12,   dur: 15 },
+const PROJECTS = [
+  {
+    num: '01', title: 'Veeva Vault CTMS',
+    desc: 'Clinical trial management configuration and GxP aligned workflows for life sciences operations.',
+    tags: ['Veeva', 'GxP', 'CTMS', 'Life Sciences'],
+  },
+  {
+    num: '02', title: 'AI Automation Studio',
+    desc: 'End to end workflows built with n8n, Make, and Claude APIs. Practical tooling for small teams.',
+    tags: ['n8n', 'Make', 'Claude API', 'Automation'],
+  },
+  {
+    num: '03', title: 'Healthcare SaaS Ops',
+    desc: 'Application support and business analysis across enterprise platforms. Production environments and configuration.',
+    tags: ['SaaS', 'Healthcare', 'BA', 'Support'],
+  },
 ]
 
-// ── Mobile: vertical timeline ─────────────────
+const WRITING = [
+  { date: '2026.04', title: 'On bridges and long arcs' },
+  { date: '2026.02', title: 'What BPO actually teaches you about software' },
+  { date: '2025.11', title: 'Automation as a craft, not a hustle' },
+  { date: '2025.09', title: 'The slow path into deep tech' },
+]
 
-function VerticalJourney({ visible, hovered, setHovered }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <div style={{ position: 'relative' }}>
-        {waypoints.map((wp, i) => {
-          const isLast = i === waypoints.length - 1
-          return (
-            <div key={wp.label}>
-              <div
-                style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '2px 0', position: 'relative', zIndex: 1 }}
-                onMouseEnter={() => visible[i] && setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-                onTouchStart={() => visible[i] && setHovered(i)}
-                onTouchEnd={() => setTimeout(() => setHovered(null), 1400)}
-              >
-                <div style={{ width: 16, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-                  {isLast ? (
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: '#c4956a',
-                      boxShadow: visible[i] ? '0 0 0 4px rgba(196,149,106,0.1)' : 'none',
-                      opacity: visible[i] ? 1 : 0,
-                      transition: 'opacity 0.5s ease, box-shadow 0.5s ease',
-                    }} />
-                  ) : (
-                    <div style={{
-                      width: 1.5, height: 10,
-                      background: 'rgba(240,235,227,0.28)',
-                      opacity: visible[i] ? 1 : 0,
-                      transition: 'opacity 0.4s ease',
-                    }} />
-                  )}
-                </div>
-
-                <span style={{
-                  fontFamily: 'var(--font-mono), monospace',
-                  fontSize: 11,
-                  letterSpacing: '0.1em',
-                  color: isLast ? '#c4956a' : 'rgba(240,235,227,0.25)',
-                  opacity: visible[i] ? 1 : 0,
-                  transition: 'opacity 0.7s ease',
-                  minWidth: 100,
-                  textAlign: 'left',
-                }}>
-                  {wp.label.toUpperCase()}
-                </span>
-              </div>
-
-              {/* Tooltip inline on mobile */}
-              <div style={{
-                paddingLeft: 34,
-                maxHeight: hovered === i ? 30 : 0,
-                overflow: 'hidden',
-                opacity: hovered === i ? 1 : 0,
-                transition: 'max-height 0.2s ease, opacity 0.2s ease',
-                fontFamily: 'var(--font-mono), monospace',
-                fontSize: 10,
-                color: 'rgba(240,235,227,0.45)',
-                letterSpacing: '0.06em',
-              }}>
-                {wp.tooltip}
-              </div>
-
-              {!isLast && (
-                <div style={{
-                  marginLeft: 7, width: 1.5, height: 20,
-                  background: 'rgba(240,235,227,0.1)',
-                  animation: visible[i] ? `growDown 0.3s ease ${DOT_DELAYS[i] + 300}ms both` : 'none',
-                }} />
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Desktop: horizontal SVG path ─────────────
-
-function HorizontalJourney({ visible, hovered, setHovered, pathLen, pathRef }) {
-  return (
-    <div style={{ position: 'relative' }}>
-      <svg
-        viewBox="0 0 580 200"
-        style={{ width: '100%', height: 'auto', overflow: 'visible', display: 'block' }}
-        aria-hidden="true"
-      >
-        <defs>
-          <filter id="tip-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Ghost path */}
-        <path d={PATH_D} fill="none" stroke="rgba(240,235,227,0.05)" strokeWidth={1.5} strokeLinecap="round" />
-
-        {/* Animated draw */}
-        <path
-          ref={pathRef}
-          d={PATH_D}
-          fill="none"
-          stroke="rgba(240,235,227,0.4)"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeDasharray={pathLen}
-          strokeDashoffset={pathLen}
-          style={{ animation: 'drawPath 1.8s cubic-bezier(0.4,0,0.2,1) 1s forwards' }}
-        />
-
-        {/* Ink tip — travels the path as it draws */}
-        <circle r={3.5} fill="#c4956a" filter="url(#tip-glow)">
-          <animateMotion dur="1.8s" begin="1s" fill="freeze" path={PATH_D} />
-          <animate attributeName="opacity" values="0;0.9;0.9;0" keyTimes="0;0.04;0.86;1" dur="1.8s" begin="1s" fill="freeze" />
-        </circle>
-
-        {waypoints.map((wp, i) => {
-          const isLast = i === waypoints.length - 1
-          return (
-            <g
-              key={wp.label}
-              onMouseEnter={() => visible[i] && setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              <circle cx={wp.x} cy={wp.y} r={18} fill="transparent" />
-
-              {isLast ? (
-                <>
-                  {/* Static ring */}
-                  <circle
-                    cx={wp.x} cy={wp.y} r={10}
-                    fill="none" stroke="#c4956a" strokeWidth={0.75}
-                    style={{ opacity: visible[i] ? 0.2 : 0, transition: 'opacity 1s ease' }}
-                  />
-                  {/* Sonar ping — fires once when dot appears */}
-                  {visible[i] && (
-                    <circle
-                      cx={wp.x} cy={wp.y} r={4}
-                      fill="none" stroke="#c4956a" strokeWidth={0.75}
-                      style={{
-                        animation: 'sonarPing 1.4s ease-out forwards',
-                        transformBox: 'fill-box',
-                        transformOrigin: 'center',
-                      }}
-                    />
-                  )}
-                  {/* Dot */}
-                  <circle
-                    cx={wp.x} cy={wp.y} r={3.5}
-                    fill="#c4956a"
-                    style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
-                  />
-                </>
-              ) : (
-                <line
-                  x1={wp.x} y1={wp.y - 5} x2={wp.x} y2={wp.y + 5}
-                  stroke="rgba(240,235,227,0.28)" strokeWidth={1.5} strokeLinecap="round"
-                  style={{ opacity: visible[i] ? 1 : 0, transition: 'opacity 0.4s ease' }}
-                />
-              )}
-
-              <text
-                x={wp.x} y={wp.y + 24}
-                textAnchor="middle"
-                fill={isLast ? '#c4956a' : 'rgba(240,235,227,0.25)'}
-                fontSize={isLast ? 11 : 10}
-                fontFamily="var(--font-mono), monospace"
-                letterSpacing="0.1em"
-                style={{
-                  opacity: visible[i] ? 1 : 0,
-                  transition: 'opacity 0.7s ease, transform 0.18s ease',
-                  transform: hovered === i ? 'translateY(-2px)' : 'translateY(0)',
-                }}
-              >
-                {wp.label.toUpperCase()}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-
-      {/* Tooltips — no border */}
-      {waypoints.map((wp, i) => (
-        <div
-          key={wp.label}
-          style={{
-            position: 'absolute',
-            left: `${(wp.x / 580) * 100}%`,
-            top: `${(wp.y / 200) * 100}%`,
-            transform: 'translate(-50%, -210%)',
-            background: 'rgba(13,11,9,0.94)',
-            borderRadius: 4,
-            padding: '6px 10px',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: 10,
-            letterSpacing: '0.06em',
-            color: 'rgba(240,235,227,0.6)',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            opacity: hovered === i ? 1 : 0,
-            transition: 'opacity 0.15s ease',
-            zIndex: 10,
-          }}
-        >
-          {wp.tooltip}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Responsive wrapper ────────────────────────
-
-function JourneyPath() {
-  const pathRef = useRef(null)
-  const [pathLen, setPathLen] = useState(720)
-  const [visible, setVisible] = useState(waypoints.map(() => false))
-  const [hovered, setHovered] = useState(null)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 560)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  useEffect(() => {
-    if (pathRef.current) setPathLen(pathRef.current.getTotalLength())
-  }, [isMobile])
-
-  useEffect(() => {
-    const timers = DOT_DELAYS.map((delay, i) =>
-      setTimeout(() =>
-        setVisible(prev => { const n = [...prev]; n[i] = true; return n }), delay)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [])
-
-  if (isMobile) {
-    return <VerticalJourney visible={visible} hovered={hovered} setHovered={setHovered} />
-  }
-
-  return (
-    <HorizontalJourney
-      visible={visible}
-      hovered={hovered}
-      setHovered={setHovered}
-      pathLen={pathLen}
-      pathRef={pathRef}
-    />
-  )
-}
-
-// ── Icons ─────────────────────────────────────
-
-const GitHubIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
-    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-  </svg>
-)
-
-const LinkedInIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden="true">
-    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-  </svg>
-)
-
-const EmailIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={20} height={20} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-  </svg>
-)
-
-const CodedexIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={20} height={20} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
-  </svg>
-)
-
-// ── Page ──────────────────────────────────────
+const TOOLS = [
+  { label: 'AI & Automation', chips: ['Claude API', 'n8n', 'Make', 'Cursor'] },
+  { label: 'Enterprise',      chips: ['Veeva Vault', 'CTMS', 'GxP', 'SaaS Ops'] },
+  { label: 'Build',           chips: ['Next.js', 'React', 'Python', 'REST APIs'] },
+]
 
 export default function Home() {
-  const h1Ref = useRef(null)
-  const iconRefs = useRef([])
+  const [active, setActive] = useState(null)
+  const orb1Ref = useRef(null)
+  const orb2Ref = useRef(null)
 
-  // Consolidated mouse tracking: name parallax + magnetic icons
+  function toggle(section) {
+    setActive(prev => (prev === section ? null : section))
+  }
+
   useEffect(() => {
-    const handleMouse = (e) => {
-      const cx = window.innerWidth / 2
-      const cy = window.innerHeight / 2
-      const nx = (e.clientX - cx) / cx  // -1 to 1
-      const ny = (e.clientY - cy) / cy
-
-      // Name depth parallax ±5px
-      if (h1Ref.current) {
-        h1Ref.current.style.transform = `translate(${nx * 5}px, ${ny * 5}px)`
-      }
-
-      // Magnetic icon attraction
-      iconRefs.current.forEach(el => {
-        if (!el) return
-        const rect = el.getBoundingClientRect()
-        const icx = rect.left + rect.width / 2
-        const icy = rect.top + rect.height / 2
-        const dx = e.clientX - icx
-        const dy = e.clientY - icy
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        const threshold = 80
-        if (dist < threshold) {
-          const pull = (1 - dist / threshold) * 6
-          el.style.transform = `translate(${(dx / dist) * pull}px, ${(dy / dist) * pull}px)`
-        } else {
-          el.style.transform = 'translate(0, 0)'
-        }
-      })
+    const body = document.body
+    if (active) {
+      body.classList.add('has-active')
+      body.setAttribute('data-section', active)
+    } else {
+      body.classList.remove('has-active')
+      body.removeAttribute('data-section')
     }
+  }, [active])
 
-    window.addEventListener('mousemove', handleMouse, { passive: true })
-    return () => window.removeEventListener('mousemove', handleMouse)
+  useEffect(() => {
+    function onKey(e) {
+      const section = KEY_MAP[e.key]
+      if (section) setActive(prev => (prev === section ? null : section))
+      if (e.key === 'Escape') setActive(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const socialLinks = [
-    { icon: <GitHubIcon />,   href: links.github,   label: 'GitHub'   },
-    { icon: <LinkedInIcon />, href: links.linkedin, label: 'LinkedIn' },
-    { icon: <CodedexIcon />,  href: links.codedex,  label: 'Codedex'  },
-  ]
+  useEffect(() => {
+    const opts = { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: false }
+    function update() {
+      const el = document.getElementById('time')
+      if (el) el.textContent = new Intl.DateTimeFormat('en-GB', opts).format(new Date()) + ' · manila'
+    }
+    update()
+    const id = setInterval(update, 30000)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    let targetX = 0, targetY = 0, currentX = 0, currentY = 0
+    let rafId
+
+    function onMouseMove(e) {
+      targetX = (e.clientX / window.innerWidth - 0.5) * 30
+      targetY = (e.clientY / window.innerHeight - 0.5) * 30
+    }
+
+    function animate() {
+      currentX += (targetX - currentX) * 0.04
+      currentY += (targetY - currentY) * 0.04
+      if (orb1Ref.current) orb1Ref.current.style.transform = `translate(${currentX * 0.6}px, ${currentY * 0.6}px)`
+      if (orb2Ref.current) orb2Ref.current.style.transform = `translate(${-currentX * 0.4}px, ${-currentY * 0.4}px)`
+      rafId = requestAnimationFrame(animate)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    rafId = requestAnimationFrame(animate)
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   return (
     <>
       <Head>
         <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="Quietly building things that work." />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/favicon.svg" />
-
         <meta property="og:title" content={meta.title} />
-        <meta property="og:description" content={meta.description} />
+        <meta property="og:description" content="Quietly building things that work." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={meta.url} />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={meta.title} />
-        <meta name="twitter:description" content={meta.description} />
-
-        <style>{`
-          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-          html, body {
-            width: 100%;
-            min-height: 100%;
-            background: #0d0b09;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-          }
-
-          @media (hover: hover) {
-            html, body, * { cursor: none !important; }
-          }
-
-          @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0);   }
-          }
-
-          @keyframes drawPath {
-            to { stroke-dashoffset: 0; }
-          }
-
-          /* Name finds its position */
-          @keyframes settle {
-            from { letter-spacing: 0.04em; opacity: 0; transform: translateY(8px); }
-            to   { letter-spacing: -0.02em; opacity: 1; transform: translateY(0);  }
-          }
-
-          /* Accent line draws from center */
-          @keyframes lineGrow {
-            from { transform: scaleX(0); }
-            to   { transform: scaleX(1); }
-          }
-
-          /* Engineering waypoint — single radar pulse */
-          @keyframes sonarPing {
-            0%   { transform: scale(1);  opacity: 0.6; }
-            100% { transform: scale(9);  opacity: 0;   }
-          }
-
-          @keyframes growDown {
-            from { height: 0; opacity: 0; }
-            to   { height: 20px; opacity: 1; }
-          }
-
-          /* Terminal cursor blink */
-          @keyframes blink {
-            0%, 49% { opacity: 0.7; }
-            50%, 100% { opacity: 0; }
-          }
-
-          /* Ambient particle drift */
-          @keyframes drift0 {
-            0%   { transform: translate(0, 0)      opacity: 0; }
-            10%  { opacity: 1; }
-            45%  { transform: translate(12px, -28px); }
-            55%  { transform: translate(18px, -22px); }
-            90%  { opacity: 0.6; }
-            100% { transform: translate(8px, -40px);  opacity: 0; }
-          }
-          @keyframes drift1 {
-            0%   { transform: translate(0, 0);     opacity: 0; }
-            10%  { opacity: 0.8; }
-            40%  { transform: translate(-14px, -20px); }
-            60%  { transform: translate(-8px,  -32px); }
-            90%  { opacity: 0.5; }
-            100% { transform: translate(-18px, -44px); opacity: 0; }
-          }
-          @keyframes drift2 {
-            0%   { transform: translate(0, 0);      opacity: 0; }
-            12%  { opacity: 0.6; }
-            50%  { transform: translate(10px, -18px); }
-            88%  { opacity: 0.4; }
-            100% { transform: translate(6px,  -36px);  opacity: 0; }
-          }
-
-          a { text-decoration: none; color: inherit; }
-
-          :focus-visible {
-            outline: 1.5px solid #c4956a;
-            outline-offset: 4px;
-            border-radius: 3px;
-          }
-        `}</style>
+        <meta name="twitter:description" content="Quietly building things that work." />
+        <link rel="canonical" href={meta.url} />
       </Head>
 
-      {/* Ambient particles — drifting copper motes in negative space */}
-      {PARTICLES.map((p, i) => (
-        <div
-          key={i}
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            left: p.x,
-            top: p.y,
-            width: 2,
-            height: 2,
-            borderRadius: '50%',
-            background: '#c4956a',
-            boxShadow: '0 0 4px 1px rgba(196,149,106,0.4)',
-            animation: `drift${i} ${p.dur}s ease-in-out ${p.delay}s infinite`,
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
-        />
-      ))}
+      <div className="orbs">
+        <div className="orb orb-1" ref={orb1Ref} />
+        <div className="orb orb-2" ref={orb2Ref} />
+      </div>
 
-      <main style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        padding: 'clamp(120px, 22vh, 200px) clamp(24px, 6vw, 64px) clamp(48px, 8vh, 96px)',
-        fontFamily: "var(--font-inter), sans-serif",
-        color: '#f0ebe3',
-        position: 'relative',
-      }}>
-
-        {/* Content */}
-        <div style={{ maxWidth: 560, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-
-          {/* Name — Cormorant display serif, settles into position, depth parallax */}
-          <h1
-            ref={h1Ref}
-            style={{
-              fontFamily: "var(--font-display), serif",
-              fontSize: 'clamp(72px, 13vw, 116px)',
-              fontWeight: 700,
-              lineHeight: 0.95,
-              letterSpacing: '-0.02em',
-              color: '#f0ebe3',
-              animation: 'settle 0.8s cubic-bezier(0.4,0,0.2,1) 0.2s both',
-              willChange: 'transform',
-              transition: 'transform 0.1s ease-out',
-            }}
-          >
-            {meta.title}
-          </h1>
-
-          {/* Tagline */}
-          <p style={{
-            marginTop: 18,
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 'clamp(11px, 1.5vw, 13px)',
-            fontWeight: 300,
-            color: 'rgba(240,235,227,0.36)',
-            letterSpacing: '0.07em',
-            animation: 'fadeUp 0.7s ease 0.5s both',
-          }}>
-            {tagline}
-          </p>
-
-          {/* Journey path */}
-          <div style={{ marginTop: 56, animation: 'fadeUp 0.6s ease 0.9s both' }}>
-            <JourneyPath />
+      <div className="stage">
+        {/* ── Header ── */}
+        <header className="top">
+          <div className="signature"><span className="dash">—</span>mark jayson punsalan</div>
+          <div className="meta">
+            <div className="time" id="time">— : —</div>
+            <div className="now"><span className="dot" />currently exploring physical ai</div>
           </div>
+        </header>
 
-          {/* Status board */}
-          <div style={{
-            marginTop: 32,
-            display: 'inline-flex',
-            flexDirection: 'column',
-            gap: 6,
-            animation: 'fadeUp 0.7s ease 4.0s both',
-          }}>
-            {status.map(({ label, value }, idx) => (
-              <div key={label} style={{
-                display: 'flex',
-                gap: 16,
-                alignItems: 'baseline',
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 'clamp(10px, 1.3vw, 12px)',
-                fontWeight: 300,
-              }}>
-                <span style={{
-                  color: 'rgba(240,235,227,0.2)',
-                  letterSpacing: '0.08em',
-                  minWidth: 64,
-                  textAlign: 'right',
-                }}>
-                  {label}
-                </span>
-                <span style={{ color: 'rgba(196,149,106,0.35)', fontSize: 10 }}>—</span>
-                <span style={{
-                  color: 'rgba(240,235,227,0.5)',
-                  letterSpacing: '0.04em',
-                }}>
-                  {value}
-                  {/* Terminal blink cursor after last status row */}
-                  {idx === status.length - 1 && (
-                    <span style={{
-                      marginLeft: 3,
-                      color: 'rgba(196,149,106,0.7)',
-                      animation: 'blink 1.1s step-end infinite',
-                      fontWeight: 300,
-                    }}>▌</span>
-                  )}
-                </span>
+        {/* ── Main: left = identity, right = nav + panels ── */}
+        <main className="center">
+
+          {/* Left: identity */}
+          <aside className="id-side">
+            <div className="identity">
+              <h1>Mark Jayson</h1>
+              <p className="surname">Punsalan</p>
+              <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
+              <p className="tagline">quietly building things that work.</p>
+              <svg className="steam-icon" viewBox="0 0 28 24" aria-hidden="true">
+                <path d="M6,22 C6,16 10,14 6,8 C2,2 6,0 6,0"/>
+                <path d="M14,22 C14,16 10,14 14,8 C18,2 14,0 14,0"/>
+                <path d="M22,22 C22,16 18,14 22,8 C26,2 22,0 22,0"/>
+              </svg>
+            </div>
+          </aside>
+
+          {/* Right: nav pills + panels */}
+          <div className="panel-side">
+
+            <nav className="pills" role="tablist">
+              {SECTIONS.map((s, i) => (
+                <button
+                  key={s}
+                  className={`pill${active === s ? ' is-active' : ''}`}
+                  onClick={() => toggle(s)}
+                  aria-pressed={active === s}
+                >
+                  <span className="num">0{i + 1}</span>
+                  {s === 'contact' ? 'say hi' : s}
+                </button>
+              ))}
+            </nav>
+
+            {/* Welcome state — shown when nothing is active */}
+            <div className={`welcome${active ? ' welcome--hidden' : ''}`}>
+              <p className="welcome-intro">
+                Ten years in enterprise software — application support, business analysis,
+                the quiet middle layer where things either hold together or fall apart.
+              </p>
+              <p className="welcome-sub">
+                Currently bridging healthcare SaaS with AI automation,
+                and building toward physical AI and robotics.
+              </p>
+              <div className="welcome-stats">
+                <span className="stat-chip"><MapPin size={13} />Manila, PH</span>
+                <span className="stat-chip"><Briefcase size={13} />10 yrs exp</span>
+                <span className="stat-chip"><Zap size={13} />open to work</span>
               </div>
-            ))}
+            </div>
+
+            {/* Panels */}
+            <div className="panel-wrap">
+
+              <div className={`panel${active === 'projects' ? ' is-visible' : ''}`}>
+                <div className="projects-grid">
+                  {PROJECTS.map(({ num, title, desc, tags }) => (
+                    <article key={num} className="project">
+                      <span className="project-num">{num}</span>
+                      <h3>{title}</h3>
+                      <p>{desc}</p>
+                      <div className="tags">
+                        {tags.map(t => <span key={t} className="tag">{t}</span>)}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`panel${active === 'writing' ? ' is-visible' : ''}`}>
+                <ul className="writing-list">
+                  {WRITING.map(({ date, title }) => (
+                    <li key={title}>
+                      <span className="date">{date}</span>
+                      <span className="title">{title}</span>
+                      <ArrowRight size={14} className="arrow-icon" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className={`panel${active === 'about' ? ' is-visible' : ''}`}>
+                <div className="about-wrap">
+                  <p>Ten years deep in enterprise software. Application support, business analysis, the quiet middle layer where things either hold together or fall apart.</p>
+                  <p>These days I split my attention between healthcare SaaS work and <span className="highlight">AI integration</span>, building automations that take the small repeated pain out of how teams operate. It pays the bills and teaches me a lot.</p>
+                  <p>Looking further out, I&apos;m building toward <span className="highlight">physical AI, robotics, and simulation</span>. That&apos;s a multi year direction. For now I&apos;m focused on the bridge between here and there.</p>
+                </div>
+              </div>
+
+              <div className={`panel${active === 'contact' ? ' is-visible' : ''}`}>
+                <div className="contact-wrap">
+                  <p>open to interesting contracts,<br />collaborations, and conversations.</p>
+                  <a className="contact-cta" href="mailto:hello@markjp.dev">
+                    hello@markjp.dev
+                    <ArrowRight size={16} />
+                  </a>
+                </div>
+              </div>
+
+              <div className={`panel${active === 'tools' ? ' is-visible' : ''}`}>
+                <div className="tools-wrap">
+                  {TOOLS.map(({ label, chips }) => (
+                    <div key={label} className="tools-group">
+                      <span className="tools-label">{label}</span>
+                      <div className="tools-chips">
+                        {chips.map(c => <span key={c} className="chip">{c}</span>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          {/* Social icons — magnetic */}
-          <div style={{
-            marginTop: 52,
-            display: 'flex',
-            gap: 32,
-            justifyContent: 'center',
-            alignItems: 'center',
-            animation: 'fadeUp 0.7s ease 4.4s both',
-          }}>
-            {socialLinks.map(({ icon, href, label }, i) => (
-              <a
-                key={label}
-                href={href}
-                aria-label={label}
-                target="_blank"
-                rel="noreferrer"
-                ref={el => { iconRefs.current[i] = el }}
-                style={{
-                  color: 'rgba(240,235,227,0.4)',
-                  transition: 'color 0.2s ease, transform 0.15s ease-out',
-                  display: 'flex',
-                  alignItems: 'center',
-                  willChange: 'transform',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(240,235,227,0.4)'
-                  e.currentTarget.style.transform = 'translate(0, 0)'
-                }}
-              >
-                {icon}
-              </a>
-            ))}
-          </div>
+        </main>
 
-          {/* Primary CTA — copper text, no border */}
-          <div style={{ marginTop: 24, animation: 'fadeUp 0.7s ease 4.7s both' }}>
-            <a
-              href={links.email}
-              aria-label="Send email"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 12,
-                fontWeight: 300,
-                letterSpacing: '0.08em',
-                color: 'rgba(196,149,106,0.6)',
-                transition: 'color 0.2s ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#c4956a' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,149,106,0.6)' }}
-            >
-              <EmailIcon />
-              say hello
+        {/* ── Footer ── */}
+        <footer className="bottom">
+          <div className="socials">
+            <a className="social" href="mailto:hello@markjp.dev" aria-label="Email">
+              <Mail size={15} strokeWidth={1.6} />
+            </a>
+            <a className="social" href="https://www.linkedin.com/in/jaysonpunsalan/" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.5 2h-17A1.5 1.5 0 0 0 2 3.5v17A1.5 1.5 0 0 0 3.5 22h17a1.5 1.5 0 0 0 1.5-1.5v-17A1.5 1.5 0 0 0 20.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 1 1 8.3 6.5a1.75 1.75 0 0 1-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0 0 13 14.19a.66.66 0 0 0 0 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 0 1 2.7-1.4c1.55 0 3.36.86 3.36 3.66z"/>
+              </svg>
+            </a>
+            <a className="social" href="https://github.com/markjpdev" aria-label="GitHub" target="_blank" rel="noopener noreferrer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.16-.02-2.11-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.21-1.49 3.18-1.18 3.18-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.11 0 1.52-.01 2.75-.01 3.13 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
+              </svg>
+            </a>
+            <a className="social" href="https://x.com/markjp" aria-label="X" target="_blank" rel="noopener noreferrer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
             </a>
           </div>
-
-        </div>
-      </main>
+          <div className="keys">press <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> or <kbd>esc</kbd></div>
+        </footer>
+      </div>
     </>
   )
 }
