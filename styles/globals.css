@@ -375,7 +375,7 @@ body::after {
 
 .panel-wrap {
   width: 100%;
-  min-height: 20rem;
+  min-height: 26rem;
   position: relative;
   overflow: hidden;
 }
@@ -524,16 +524,15 @@ body::after {
 
 /* ─── About ─── */
 
-.about-wrap p {
-  font-size: 0.97rem;
-  line-height: 1.75;
-  color: var(--ink);
-  margin-bottom: 1rem;
-  font-weight: 400;
+.about-wrap { }
+
+.about-lead {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
   max-width: 52ch;
 }
-
-.about-wrap p:last-child { margin-bottom: 0; }
 
 .about-wrap .highlight {
   color: var(--blue);
@@ -729,4 +728,257 @@ body::after {
   .identity h1 { font-size: 2.4rem; }
   .identity .surname { font-size: 1.1rem; }
   .identity .baybayin { display: none; }
+}
+
+/* ─── Icon ─── */
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  line-height: 1;
+}
+
+.icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  border-radius: 6px;
+  padding: 0.3rem;
+  transition: color 250ms var(--ease-out), background 250ms var(--ease-out);
+}
+
+.icon-btn:hover {
+  color: var(--ink);
+  background: rgba(42, 37, 32, 0.06);
+}
+
+.icon-btn:hover .icon-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.icon-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  padding: 0.22rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+  z-index: 10;
+}
+
+/* ─── Timeline ─── */
+
+.timeline {
+  --tl-node-size:    10px;
+  --tl-icon-size:    22px;
+  --tl-line-color:   var(--grey-line);
+  --tl-gap:          1.75rem;
+  --tl-dot-done:     var(--blue);
+  --tl-dot-active:   var(--copper);
+  --tl-dot-pending:  transparent;
+}
+
+/* ── Vertical (default) ── */
+.timeline--vertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline--vertical .tl-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.timeline--vertical .tl-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: var(--tl-icon-size);
+}
+
+.timeline--vertical .tl-connector {
+  width: 1px;
+  flex: 1;
+  min-height: var(--tl-gap);
+  background: var(--tl-line-color);
+}
+
+.timeline--vertical .tl-body {
+  flex: 1;
+  padding-bottom: var(--tl-gap);
+}
+
+/* ── Horizontal ── */
+.timeline--horizontal {
+  display: flex;
+  flex-direction: row;
+}
+
+.timeline--horizontal .tl-item {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline--horizontal .tl-spine {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+}
+
+.timeline--horizontal .tl-connector {
+  flex: 1;
+  height: 1px;
+  background: var(--tl-line-color);
+}
+
+.timeline--horizontal .tl-body {
+  padding-top: 0.7rem;
+  padding-right: 1rem;
+}
+
+/* ── Alternating vertical ── */
+.timeline--alt.timeline--vertical .tl-item {
+  display: grid;
+  grid-template-columns: 1fr var(--tl-icon-size) 1fr;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.timeline--alt .tl-spine--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline--alt .tl-spine--center .tl-connector {
+  width: 1px;
+  min-height: var(--tl-gap);
+  background: var(--tl-line-color);
+}
+
+.tl-slot { min-height: 1px; }
+
+.tl-slot--left .tl-body { text-align: right; }
+
+.tl-slot--left .tl-body .tl-body,
+.timeline--alt .tl-slot--left .tl-body { padding-bottom: var(--tl-gap); }
+
+.timeline--alt .tl-slot--right .tl-body { padding-bottom: var(--tl-gap); }
+
+/* ── Node ── */
+.tl-node {
+  width: var(--tl-node-size);
+  height: var(--tl-node-size);
+  border-radius: 50%;
+  border: 2px solid var(--grey);
+  background: var(--tl-dot-pending);
+  flex-shrink: 0;
+  transition: all 300ms var(--ease-out);
+}
+
+.tl-node--icon {
+  width: var(--tl-icon-size);
+  height: var(--tl-icon-size);
+  border-width: 1px;
+  border-color: var(--grey-line);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+}
+
+/* Node states */
+.tl-node--completed:not(.tl-node--icon) {
+  background: var(--tl-dot-done);
+  border-color: var(--tl-dot-done);
+}
+
+.tl-node--icon.tl-node--completed {
+  border-color: rgba(44, 74, 107, 0.25);
+  background: rgba(44, 74, 107, 0.08);
+  color: var(--blue);
+}
+
+.tl-node--active:not(.tl-node--icon) {
+  background: var(--tl-dot-active);
+  border-color: var(--tl-dot-active);
+  box-shadow: 0 0 0 3px rgba(196, 149, 106, 0.2);
+}
+
+.tl-node--icon.tl-node--active {
+  border-color: rgba(196, 149, 106, 0.35);
+  background: rgba(196, 149, 106, 0.1);
+  color: var(--copper);
+  box-shadow: 0 0 0 3px rgba(196, 149, 106, 0.12);
+}
+
+.tl-item--pending .tl-body,
+.tl-item--pending .tl-slot .tl-body {
+  opacity: 0.4;
+}
+
+/* Active/completed connector tints */
+.tl-item--completed .tl-connector,
+.tl-item--active .tl-connector {
+  background: rgba(44, 74, 107, 0.18);
+}
+
+/* ── Content ── */
+.tl-time {
+  display: block;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--copper);
+  margin-bottom: 0.2rem;
+}
+
+.tl-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+  line-height: 1.35;
+}
+
+.tl-desc {
+  font-size: 0.81rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Vertical non-alt: align node with first text line */
+.timeline--vertical:not(.timeline--alt) .tl-node:not(.tl-node--icon) {
+  margin-top: 0.32rem;
+}
+
+.timeline--vertical:not(.timeline--alt) .tl-node--icon {
+  margin-top: 0;
 }

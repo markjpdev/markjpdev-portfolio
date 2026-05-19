@@ -1,7 +1,9 @@
 import Head from 'next/head'
 import { useState, useEffect, useRef } from 'react'
-import { Mail, ArrowRight, MapPin, Briefcase, Zap } from 'lucide-react'
+import { Mail, ArrowRight } from 'lucide-react'
 import { meta } from '../lib/content'
+import Timeline from '../components/Timeline'
+import Icon from '../components/Icon'
 
 const SECTIONS = ['projects', 'writing', 'about', 'contact', 'tools']
 const KEY_MAP = { '1': 'projects', '2': 'writing', '3': 'about', '4': 'contact', '5': 'tools' }
@@ -36,6 +38,41 @@ const TOOLS = [
   { label: 'Enterprise',      chips: ['Veeva Vault', 'CTMS', 'GxP', 'SaaS Ops'] },
   { label: 'Build',           chips: ['Next.js', 'React', 'Python', 'REST APIs'] },
 ]
+
+const CAREER = [
+  {
+    timestamp: '2024 – present',
+    title: 'AI Integration & Automation',
+    description: 'Building end-to-end workflows with n8n, Make, and Claude APIs. Veeva Vault CTMS configuration for life sciences.',
+    state: 'active',
+    icon: 'Zap',
+  },
+  {
+    timestamp: '2020 – 2024',
+    title: 'Senior Application Support',
+    description: 'Enterprise SaaS support and business analysis across healthcare platforms. GxP compliance and production operations.',
+    state: 'completed',
+    icon: 'Briefcase',
+  },
+  {
+    timestamp: '2016 – 2020',
+    title: 'BPO & Technical Operations',
+    description: 'Technical support at scale. First deep exposure to enterprise software and process thinking.',
+    state: 'completed',
+  },
+  {
+    timestamp: '2014 – 2016',
+    title: 'Entry into Technology',
+    description: 'Started bridging business operations and tech. Built the foundation everything else sits on.',
+    state: 'completed',
+  },
+]
+
+const WRITING_TIMELINE = WRITING.map((w, i) => ({
+  timestamp: w.date,
+  title: w.title,
+  state: i === 0 ? 'active' : 'completed',
+}))
 
 export default function Home() {
   const [active, setActive] = useState(null)
@@ -181,9 +218,9 @@ export default function Home() {
                 and building toward physical AI and robotics.
               </p>
               <div className="welcome-stats">
-                <span className="stat-chip"><MapPin size={13} />Manila, PH</span>
-                <span className="stat-chip"><Briefcase size={13} />10 yrs exp</span>
-                <span className="stat-chip"><Zap size={13} />open to work</span>
+                <span className="stat-chip"><Icon name="MapPin" size="sm" decorative />Manila, PH</span>
+                <span className="stat-chip"><Icon name="Briefcase" size="sm" decorative />10 yrs exp</span>
+                <span className="stat-chip"><Icon name="Zap" size="sm" decorative />open to work</span>
               </div>
             </div>
 
@@ -206,22 +243,13 @@ export default function Home() {
               </div>
 
               <div className={`panel${active === 'writing' ? ' is-visible' : ''}`}>
-                <ul className="writing-list">
-                  {WRITING.map(({ date, title }) => (
-                    <li key={title}>
-                      <span className="date">{date}</span>
-                      <span className="title">{title}</span>
-                      <ArrowRight size={14} className="arrow-icon" />
-                    </li>
-                  ))}
-                </ul>
+                <Timeline events={WRITING_TIMELINE} orientation="horizontal" />
               </div>
 
               <div className={`panel${active === 'about' ? ' is-visible' : ''}`}>
                 <div className="about-wrap">
-                  <p>Ten years deep in enterprise software. Application support, business analysis, the quiet middle layer where things either hold together or fall apart.</p>
-                  <p>These days I split my attention between healthcare SaaS work and <span className="highlight">AI integration</span>, building automations that take the small repeated pain out of how teams operate. It pays the bills and teaches me a lot.</p>
-                  <p>Looking further out, I&apos;m building toward <span className="highlight">physical AI, robotics, and simulation</span>. That&apos;s a multi year direction. For now I&apos;m focused on the bridge between here and there.</p>
+                  <p className="about-lead">Ten years bridging enterprise software and the people who depend on it. Here&apos;s where I&apos;ve been.</p>
+                  <Timeline events={CAREER} orientation="vertical" />
                 </div>
               </div>
 
