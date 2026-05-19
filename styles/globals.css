@@ -190,7 +190,6 @@ body::after {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2rem;
   max-width: clamp(260px, 35vw, 500px);
   flex-shrink: 0;
 }
@@ -271,7 +270,8 @@ body::after {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  margin-bottom: 2rem;
 }
 
 .pill {
@@ -698,13 +698,11 @@ body::after {
   .id-side {
     order: -1;
     align-items: flex-start;
-    text-align: left;
     max-width: none;
   }
 
   .identity { text-align: left; }
   .steam-icon { margin-left: 0; }
-  .pills { justify-content: flex-start; }
 
   .projects-grid { grid-template-columns: 1fr 1fr; gap: 0.9rem; }
   .tools-wrap { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
@@ -741,5 +739,4 @@ body::after {
   .identity h1 { font-size: 2.4rem; }
   .identity .surname { font-size: 1.1rem; }
   .identity .baybayin { display: none; }
-  .id-side { gap: 1.2rem; }
 }

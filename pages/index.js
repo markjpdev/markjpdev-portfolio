@@ -135,11 +135,25 @@ export default function Home() {
           </div>
         </header>
 
-        {/* ── Main: left = panels, right = identity ── */}
+        {/* ── Main: left = nav + panels, right = identity ── */}
         <main className="center">
 
-          {/* Left: panels */}
+          {/* Left: nav pills + panels */}
           <div className="panel-side">
+
+            <nav className="pills" role="tablist">
+              {SECTIONS.map((s, i) => (
+                <button
+                  key={s}
+                  className={`pill${active === s ? ' is-active' : ''}`}
+                  onClick={() => toggle(s)}
+                  aria-pressed={active === s}
+                >
+                  <span className="num">0{i + 1}</span>
+                  {s === 'contact' ? 'say hi' : s}
+                </button>
+              ))}
+            </nav>
 
             {/* Welcome state — shown when nothing is active */}
             <div className={`welcome${active ? ' welcome--hidden' : ''}`}>
@@ -222,7 +236,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: identity + nav */}
+          {/* Right: identity only */}
           <aside className="id-side">
             <div className="identity">
               <h1>Mark Jayson</h1>
@@ -235,20 +249,6 @@ export default function Home() {
                 <path d="M22,22 C22,16 18,14 22,8 C26,2 22,0 22,0"/>
               </svg>
             </div>
-
-            <nav className="pills" role="tablist">
-              {SECTIONS.map((s, i) => (
-                <button
-                  key={s}
-                  className={`pill${active === s ? ' is-active' : ''}`}
-                  onClick={() => toggle(s)}
-                  aria-pressed={active === s}
-                >
-                  <span className="num">0{i + 1}</span>
-                  {s === 'contact' ? 'say hi' : s}
-                </button>
-              ))}
-            </nav>
           </aside>
         </main>
 
