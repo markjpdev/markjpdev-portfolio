@@ -136,11 +136,8 @@ export default function Home() {
           <div className="content">
             <div className="inner">
               <h1>Mark Jayson Punsalan</h1>
-              <p>
-                quietly building things that work.
-                <br />
-                <span className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</span>
-              </p>
+              <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
+              <p>quietly building things that work.</p>
             </div>
           </div>
 
@@ -158,9 +155,9 @@ export default function Home() {
         </header>
 
         {/* ── Articles ── */}
-        <div id="main">
+        <div id="main" onClick={close}>
 
-          <article id="projects" className={active === 'projects' && !leaving ? 'active' : ''}>
+          <article id="projects" className={active === 'projects' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
             <h2 className="major">Projects</h2>
             <div className="projects-grid">
               {PROJECTS.map(({ num, title, desc, tags }) => (
@@ -177,7 +174,7 @@ export default function Home() {
             <button className="close" onClick={close} aria-label="Close">Close</button>
           </article>
 
-          <article id="writing" className={active === 'writing' && !leaving ? 'active' : ''}>
+          <article id="writing" className={active === 'writing' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
             <h2 className="major">Writing</h2>
             <ul className="writing-list">
               {WRITING_TIMELINE.map(({ timestamp, title, state }) => (
@@ -191,7 +188,7 @@ export default function Home() {
             <button className="close" onClick={close} aria-label="Close">Close</button>
           </article>
 
-          <article id="about" className={active === 'about' && !leaving ? 'active' : ''}>
+          <article id="about" className={active === 'about' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
             <h2 className="major">About</h2>
             <p className="about-lead">
               Ten years in enterprise software — application support, business analysis,
@@ -201,7 +198,7 @@ export default function Home() {
             <button className="close" onClick={close} aria-label="Close">Close</button>
           </article>
 
-          <article id="contact" className={active === 'contact' && !leaving ? 'active' : ''}>
+          <article id="contact" className={active === 'contact' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
             <h2 className="major">Say Hi</h2>
             <p className="contact-sub">
               Open to interesting contracts, collaborations, and conversations.
@@ -234,7 +231,7 @@ export default function Home() {
             <button className="close" onClick={close} aria-label="Close">Close</button>
           </article>
 
-          <article id="tools" className={active === 'tools' && !leaving ? 'active' : ''}>
+          <article id="tools" className={active === 'tools' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
             <h2 className="major">Tools</h2>
             <div className="tools-wrap">
               {TOOLS.map(({ label, chips }) => (
