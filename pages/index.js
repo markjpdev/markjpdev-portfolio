@@ -135,10 +135,25 @@ export default function Home() {
           </div>
         </header>
 
-        {/* ── Main: left = nav + panels, right = identity ── */}
+        {/* ── Main: left = identity, right = nav + panels ── */}
         <main className="center">
 
-          {/* Left: nav pills + panels */}
+          {/* Left: identity */}
+          <aside className="id-side">
+            <div className="identity">
+              <h1>Mark Jayson</h1>
+              <p className="surname">Punsalan</p>
+              <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
+              <p className="tagline">quietly building things that work.</p>
+              <svg className="steam-icon" viewBox="0 0 28 24" aria-hidden="true">
+                <path d="M6,22 C6,16 10,14 6,8 C2,2 6,0 6,0"/>
+                <path d="M14,22 C14,16 10,14 14,8 C18,2 14,0 14,0"/>
+                <path d="M22,22 C22,16 18,14 22,8 C26,2 22,0 22,0"/>
+              </svg>
+            </div>
+          </aside>
+
+          {/* Right: nav pills + panels */}
           <div className="panel-side">
 
             <nav className="pills" role="tablist">
@@ -236,20 +251,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: identity only */}
-          <aside className="id-side">
-            <div className="identity">
-              <h1>Mark Jayson</h1>
-              <p className="surname">Punsalan</p>
-              <p className="baybayin">ᜋᜇ᜔ᜃ ᜑᜒᜐᜓᜈ᜔ ᜉᜓᜈ᜔ᜐᜎᜈ᜔</p>
-              <p className="tagline">quietly building things that work.</p>
-              <svg className="steam-icon" viewBox="0 0 28 24" aria-hidden="true">
-                <path d="M6,22 C6,16 10,14 6,8 C2,2 6,0 6,0"/>
-                <path d="M14,22 C14,16 10,14 14,8 C18,2 14,0 14,0"/>
-                <path d="M22,22 C22,16 18,14 22,8 C26,2 22,0 22,0"/>
-              </svg>
-            </div>
-          </aside>
         </main>
 
         {/* ── Footer ── */}

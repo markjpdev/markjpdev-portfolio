@@ -173,29 +173,27 @@ body::after {
   to   { transform: scaleX(1); }
 }
 
-/* ─── Main — two-column: panels left, identity right ─── */
+/* ─── Main — two-column: identity left, panels right ─── */
 
 .center {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: clamp(2rem, 4vw, 5rem);
+  grid-template-columns: clamp(220px, 28vw, 360px) 1fr;
+  gap: clamp(2.5rem, 5vw, 6rem);
   align-items: center;
   min-height: 0;
   overflow: hidden;
 }
 
-/* ─── Identity (right column) ─── */
+/* ─── Identity (left column) ─── */
 
 .id-side {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  max-width: clamp(260px, 35vw, 500px);
-  flex-shrink: 0;
+  align-items: flex-start;
 }
 
 .identity {
-  text-align: right;
+  text-align: left;
 }
 
 .identity h1 {
@@ -247,7 +245,6 @@ body::after {
 .steam-icon {
   display: block;
   margin-top: 0.7rem;
-  margin-left: auto;
   width: 28px;
   height: 24px;
   opacity: 0.5;
@@ -695,14 +692,7 @@ body::after {
     align-items: start;
   }
 
-  .id-side {
-    order: -1;
-    align-items: flex-start;
-    max-width: none;
-  }
-
   .identity { text-align: left; }
-  .steam-icon { margin-left: 0; }
 
   .projects-grid { grid-template-columns: 1fr 1fr; gap: 0.9rem; }
   .tools-wrap { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
