@@ -102,9 +102,11 @@ body::after {
   position: relative;
   z-index: 1;
   height: 100vh;
+  height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
   padding: 2.5rem 3rem;
+  overflow: hidden;
 }
 
 /* ─── Header ─── */
@@ -176,9 +178,10 @@ body::after {
 .center {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 5rem;
+  gap: clamp(2rem, 4vw, 5rem);
   align-items: center;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* ─── Identity (right column) ─── */
@@ -188,6 +191,8 @@ body::after {
   flex-direction: column;
   align-items: flex-end;
   gap: 2rem;
+  max-width: clamp(260px, 35vw, 500px);
+  flex-shrink: 0;
 }
 
 .identity {
@@ -197,7 +202,7 @@ body::after {
 .identity h1 {
   font-family: var(--sans);
   font-weight: 600;
-  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  font-size: clamp(2.8rem, 4.5vw, 5rem);
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -368,12 +373,14 @@ body::after {
   min-width: 0;
   width: 100%;
   position: relative;
+  min-height: 0;
 }
 
 .panel-wrap {
   width: 100%;
   min-height: 20rem;
   position: relative;
+  overflow: hidden;
 }
 
 .panel {
@@ -692,6 +699,7 @@ body::after {
     order: -1;
     align-items: flex-start;
     text-align: left;
+    max-width: none;
   }
 
   .identity { text-align: left; }
