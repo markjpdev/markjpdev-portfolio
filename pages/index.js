@@ -35,26 +35,20 @@ const WRITING_TIMELINE = [
 const CAREER = [
   {
     timestamp: '2024 – present',
-    title: 'AI Integration & Automation',
-    description: 'Building end-to-end workflows with n8n, Make, and Claude APIs. Veeva Vault CTMS configuration for life sciences.',
+    title: 'Business Analyst and Application Support',
+    description: 'Regulated healthcare SaaS at RxPx Health. Requirements gathering, configuration, UAT, and triaging production incidents as they happen.',
     state: 'active', icon: 'Zap',
   },
   {
-    timestamp: '2020 – 2024',
-    title: 'Senior Application Support',
-    description: 'Enterprise SaaS support and business analysis across healthcare platforms. GxP compliance.',
+    timestamp: '2021 – 2024',
+    title: 'Clinical Systems Support',
+    description: 'Thermo Fisher Scientific. Application support for clinical trial platforms across Veeva Vault, Medidata Rave, Oracle goBalto and others, inside GxP regulated environments.',
     state: 'completed', icon: 'Briefcase',
   },
   {
-    timestamp: '2016 – 2020',
-    title: 'BPO & Technical Operations',
-    description: 'Technical support at scale. First deep exposure to enterprise software and process thinking.',
-    state: 'completed',
-  },
-  {
-    timestamp: '2014 – 2016',
-    title: 'Entry into Technology',
-    description: 'Started bridging business operations and tech. Built the foundation everything else sits on.',
+    timestamp: '2013 – 2020',
+    title: 'Technical Support, BPO',
+    description: 'VXI Global, Convergys, Alorica, Cybersoft. Tier 1 and Tier 2 across telecom and enterprise back office work, where I learned systematic troubleshooting under pressure.',
     state: 'completed',
   },
 ]
@@ -198,8 +192,7 @@ export default function Home() {
           <article id="about" className={active === 'about' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
             <h2 className="major">About</h2>
             <p className="about-lead">
-              Ten years in enterprise software — application support, business analysis,
-              the quiet middle layer where things either hold together or fall apart.
+              Ten years in enterprise software. Application support, business analysis &amp; Technical support
             </p>
             <Timeline events={CAREER} orientation="vertical" />
             <button className="close" onClick={close} aria-label="Close">Close</button>
