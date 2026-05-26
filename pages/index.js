@@ -264,10 +264,9 @@ export default function Home() {
               </li>
             </ul>
           </article>
-        </div>
-      </main>
-    </div>
-  );
-}
+        </main>
+      </div>
+    );
+  }
 
 export default Home;
