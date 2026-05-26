@@ -265,6 +265,28 @@ export default function Home() {
             </ul>
           </article>
 
+        {/* Tools Section */}
+          <article id="tools" className={active === 'tools' && !leaving ? 'active' : ''} onClick={e => e.stopPropagation()}>
+            <h2 className="major">Tools</h2>
+            <div className="tools-container">
+              {TOOLS.map((group) => (
+                <div key={group.label} style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ letterSpacing: '2px', opacity: 0.5, fontSize: '0.8rem', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                    {group.label}
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {group.chips.map(chip => (
+                      <span key={chip} style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.06)', padding: '0.4rem 0.8rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="close" onClick={close} aria-label="Close">Close</button>
+          </article>
+
         </div>
 
       </div>
